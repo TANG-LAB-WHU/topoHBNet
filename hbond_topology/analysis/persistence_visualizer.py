@@ -8,6 +8,7 @@ including persistence barcodes and persistence diagrams.
 import matplotlib.pyplot as plt
 import numpy as np
 from typing import Dict, List, Optional, Tuple
+import matplotlib as mpl
 
 
 def plot_persistence_barcode(
@@ -19,7 +20,7 @@ def plot_persistence_barcode(
     dpi: int = 300,
 ):
     """
-    Plot persistence barcode for multiple dimensions.
+    Plot persistence barcode for multiple dimensions with gradient fills.
 
     Args:
         barcodes: Dictionary mapping dimension names (e.g., 'H0', 'H1') to lists of [birth, death] pairs.
@@ -29,22 +30,38 @@ def plot_persistence_barcode(
         save_path: Path to save the plot. If None, the plot is displayed.
         dpi: DPI for the saved plot.
     """
-    plt.figure(figsize=figsize)
+    # Premium colors
+    COLORS = {
+        'H0': '#5DADE2',  # Soft Blue
+        'H1': '#E74C3C',  # Soft Red
+        'H2': '#58D68D',  # Soft Green
+        'other': '#AF7AC5' # Soft Purple
+    }
+    
+    fig, ax = plt.subplots(figsize=figsize)
     
     # Sort dimensions for consistent plotting
     dims = sorted(barcodes.keys())
     
     current_y = 0
+    
+    # Custom color generator if needed
     try:
-        colors = plt.cm.get_cmap("tab10")
+        cmap = plt.cm.get_cmap("tab10")
     except Exception:
-        # Compatibility for newer matplotlib
-        import matplotlib as mpl
-        colors = mpl.colormaps["tab10"]
+        cmap = mpl.colormaps["tab10"]
     
     for i, dim in enumerate(dims):
         intervals = barcodes[dim]
-        color = colors(i)
+        # Determine base color
+        if dim in COLORS:
+            base_color_hex = COLORS[dim]
+        elif f"H{i}" in COLORS:
+            base_color_hex = COLORS[f"H{i}"]
+        else:
+            base_color_hex = mpl.colors.to_hex(cmap(i))
+            
+        base_rgb = mpl.colors.to_rgb(base_color_hex)
         
         # Sort intervals by birth time, then by death time
         intervals = sorted(intervals, key=lambda x: (x[0], x[1]))
@@ -54,23 +71,67 @@ def plot_persistence_barcode(
             if death == float('inf'):
                 death = max_epsilon
             
-            plt.hlines(current_y, birth, death, colors=color, linewidth=2, label=dim if birth == intervals[0][0] and death == intervals[0][1] else "")
+            # Clip death to max_epsilon for visualization
+            death = min(death, max_epsilon)
+            
+            if death <= birth:
+                continue
+                
+            # Create gradient data: (1, N, 4) array (RGBA)
+            # Gradient transparency from 0.9 to 0.4
+            width_px = 100
+            gradient = np.linspace(0.9, 0.3, width_px).reshape(1, -1)
+            
+            # Construct RGBA image
+            # Shape (1, width_px, 4)
+            img_data = np.zeros((1, width_px, 4))
+            img_data[:, :, 0] = base_rgb[0] # R
+            img_data[:, :, 1] = base_rgb[1] # G
+            img_data[:, :, 2] = base_rgb[2] # B
+            img_data[:, :, 3] = gradient    # Alpha
+            
+            # Show gradient bar
+            # Extent: [left, right, bottom, top]
+            ax.imshow(
+                img_data, 
+                aspect='auto', 
+                extent=[birth, death, current_y - 0.4, current_y + 0.4],
+                origin='lower'
+            )
+            
             current_y += 1
             
         # Add a small gap between dimensions
         current_y += 1
         
-    plt.xlabel("Distance Threshold ($\\epsilon$)", fontsize=12)
-    plt.ylabel("Bars", fontsize=12)
-    plt.title(title, fontsize=14, fontweight='bold')
-    plt.yticks([])  # Hide y-axis ticks as they are just bar indices
-    plt.grid(True, axis='x', linestyle='--', alpha=0.6)
-    plt.xlim(0, max_epsilon)
+    ax.set_xlabel("Distance Threshold ($\\epsilon$)", fontsize=12)
+    ax.set_ylabel("Bars", fontsize=12)
+    ax.set_title(title, fontsize=14, fontweight='bold', color='#2C3E50')
+    ax.set_yticks([])  # Hide y-axis ticks
     
-    # Create a custom legend to show only dimensions, not every bar
+    # Custom Grid
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5, color='#EAEDED')
+    ax.set_xlim(0, max_epsilon)
+    ax.set_ylim(-1, current_y)
+    
+    # Remove spines
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
+    ax.spines['bottom'].set_color('#BDC3C7')
+    
+    # Create a custom legend
     from matplotlib.lines import Line2D
-    legend_elements = [Line2D([0], [0], color=colors(i), lw=2, label=dim) for i, dim in enumerate(dims)]
-    plt.legend(handles=legend_elements, loc='upper right')
+    legend_elements = []
+    for i, dim in enumerate(dims):
+        if dim in COLORS:
+            c = COLORS[dim]
+        elif f"H{i}" in COLORS:
+            c = COLORS[f"H{i}"]
+        else:
+            c = cmap(i)
+        legend_elements.append(Line2D([0], [0], color=c, lw=4, label=dim, alpha=0.8))
+        
+    ax.legend(handles=legend_elements, loc='upper right', frameon=False)
     
     plt.tight_layout()
     
@@ -106,7 +167,6 @@ def plot_persistence_diagram(
     try:
         colors = plt.cm.get_cmap("tab10")
     except Exception:
-        import matplotlib as mpl
         colors = mpl.colormaps["tab10"]
     
     for i, dim in enumerate(dims):

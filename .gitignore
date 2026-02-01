@@ -49,10 +49,10 @@ htmlcov/
 
 # Analysis outputs (optional: keep if you want to track results)
 results_*/
-results*
-*.png
-*.jpg
-*.json
+#results*
+#*.png
+#*.jpg
+#*.json
 !pyproject.json
 
 # Large data files
@@ -60,6 +60,8 @@ results*
 *.xyz
 *.dump
 *.trj
+*.cell
+*.extxyz
 
 # OS
 .DS_Store

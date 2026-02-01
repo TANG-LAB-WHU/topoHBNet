@@ -184,10 +184,27 @@ class TrajectoryParser:
     
     def __init__(
         self, 
-        filepath: Union[str, Path],
+        filepath: Union[str, Path], 
         format: Optional[str] = None,
-        element_to_type: Optional[Dict[str, int]] = None
+        element_to_type: Optional[Dict[str, int]] = None,
+        cell_filepath: Optional[Union[str, Path]] = None
     ):
+        """
+        Initialize the TrajectoryParser.
+        
+        Parameters
+        ----------
+        filepath : str or Path
+            Path to the trajectory file
+        format : str, optional
+            Format of the trajectory file (e.g., 'xyz', 'pdb').
+            If None, ASE will attempt to guess.
+        element_to_type : dict, optional
+            Mapping from element symbols to numeric types.
+            If None, defaults will be used.
+        cell_filepath : str or Path, optional
+            Path to separate CP2K cell file (.cell) containing box information.
+        """
         self.filepath = Path(filepath)
         self.format = format
         # ASE sometimes needs explicit format for LAMMPS dump files
@@ -196,9 +213,42 @@ class TrajectoryParser:
                 self.format = 'lammps-dump-text'
         
         self.element_to_type = element_to_type or DEFAULT_ELEMENT_TO_TYPE
+        self.cell_filepath = Path(cell_filepath) if cell_filepath else None
         self._frames: List[Frame] = []
         self._parsed = False
-    
+
+    def _parse_cp2k_cell_file(self) -> Optional[np.ndarray]:
+        """
+        Parse CP2K .cell file to extract box dimensions.
+        
+        Returns
+        -------
+        np.ndarray
+            Array of shape (n_steps, 3) containing box lengths [Lx, Ly, Lz] for each step.
+            Currently assumes orthorhombic boxes aligned with axes for simplicity in integration.
+        """
+        if not self.cell_filepath or not self.cell_filepath.exists():
+            return None
+            
+        try:
+            # Skip header line (starts with #)
+            data = np.loadtxt(self.cell_filepath)
+            
+            # CP2K cell file columns:
+            # Step Time Ax Ay Az Bx By Bz Cx Cy Cz Vol
+            # 0    1    2  3  4  5  6  7  8  9  10 11
+            
+            # Extract diagonal elements for box lengths (Ax, By, Cz)
+            # This assumes orthorhombic cell aligned with axes, which is standard for most CP2K AIMD
+            # TODO: Support full triclinic cells if needed by upgrading Frame class
+            box_lengths = data[:, [2, 6, 10]]
+            
+            return box_lengths
+            
+        except Exception as e:
+            print(f"Warning: Failed to parse cell file {self.cell_filepath}: {e}")
+            return None
+
     def parse(self) -> List[Frame]:
         """
         Parse the entire trajectory file.
@@ -217,23 +267,52 @@ class TrajectoryParser:
         # Handle single Atoms object (not a list)
         if isinstance(atoms_list, Atoms):
             atoms_list = [atoms_list]
+            
+        # Parse cell file if provided
+        cell_data = self._parse_cp2k_cell_file()
         
-        self._frames = [
-            Frame.from_ase_atoms(
+        frames = []
+        for i, atoms in enumerate(atoms_list):
+            frame = Frame.from_ase_atoms(
                 atoms, 
                 atoms.info.get('timestep', atoms.info.get('time', i)), 
                 self.element_to_type
             )
-            for i, atoms in enumerate(atoms_list)
-        ]
+            
+            # Override box information if cell data is available
+            if cell_data is not None and i < len(cell_data):
+                # Update box_bounds based on cell lengths
+                # Assuming box starts at origin (0,0,0) as is typical for minimum image convention
+                lengths = cell_data[i]
+                frame.box_bounds = np.array([
+                    [0.0, lengths[0]],
+                    [0.0, lengths[1]],
+                    [0.0, lengths[2]]
+                ])
+                
+            frames.append(frame)
+            
+        self._frames = frames
         self._parsed = True
         return self._frames
     
     def _parse_generator(self) -> Generator[Frame, None, None]:
         """Generator that yields frames one at a time (memory efficient)."""
+        cell_data = self._parse_cp2k_cell_file()
         for i, atoms in enumerate(iread(str(self.filepath), format=self.format)):
             timestep = atoms.info.get('timestep', atoms.info.get('time', i))
-            yield Frame.from_ase_atoms(atoms, timestep, self.element_to_type)
+            frame = Frame.from_ase_atoms(atoms, timestep, self.element_to_type)
+            
+            # Override box information if cell data is available
+            if cell_data is not None and i < len(cell_data):
+                lengths = cell_data[i]
+                frame.box_bounds = np.array([
+                    [0.0, lengths[0]],
+                    [0.0, lengths[1]],
+                    [0.0, lengths[2]]
+                ])
+            
+            yield frame
     
     def __len__(self) -> int:
         """Return number of frames in trajectory."""
