@@ -563,10 +563,6 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
     ax.set_ylabel('Number of H-bonds', fontsize=12)
     ax.set_title('Hydrogen Bond Network Dynamics', fontsize=14, fontweight='bold', color='#2C3E50')
     ax.grid(True, color=COLORS['gray_grid'], alpha=0.6)
-    try:
-        sns.despine()
-    except:
-        pass
     fig.tight_layout()
     fig.savefig(output_dir / "hbond_dynamics.png", dpi=dpi, bbox_inches='tight')
     plt.close(fig)
@@ -597,11 +593,7 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
     axes[2].set_ylabel(r'$\beta_2$', fontsize=12)
     axes[2].legend(loc='upper right', frameon=False)
     axes[2].grid(True, color=COLORS['gray_grid'], alpha=0.5)
-    
-    try:
-        sns.despine()
-    except:
-        pass
+
     fig.tight_layout()
     fig.savefig(output_dir / "betti_dynamics.png", dpi=dpi, bbox_inches='tight')
     plt.close(fig)
@@ -652,11 +644,6 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
         axes[2].legend(frameon=False)
         axes[2].grid(False)
     
-    if sns is not None:
-        try:
-            sns.despine()
-        except:
-            pass
     fig.suptitle('Hydrogen Bond Geometry Distributions', fontsize=14, fontweight='bold', color='#2C3E50', y=1.05)
     fig.tight_layout()
     fig.savefig(output_dir / "hbond_distributions.png", dpi=dpi, bbox_inches='tight')
@@ -707,11 +694,7 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
         axes[1].set_title('Degree Distribution', fontsize=12, fontweight='bold', color='#2C3E50')
         axes[1].legend(frameon=False)
         axes[1].grid(axis='y', color=COLORS['gray_grid'], alpha=0.5)
-    
-    try:
-        sns.despine()
-    except:
-        pass
+
     fig.tight_layout()
     fig.savefig(output_dir / "coordination_degree.png", dpi=dpi, bbox_inches='tight')
     plt.close(fig)
@@ -730,10 +713,6 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
         ax.set_title('Hydrogen Bond Lifetime Distribution', fontsize=14, fontweight='bold', color='#2C3E50')
         ax.legend(frameon=False)
         ax.grid(axis='y', color=COLORS['gray_grid'], alpha=0.5)
-        try:
-            sns.despine()
-        except:
-            pass
         fig.tight_layout()
         fig.savefig(output_dir / "hbond_lifetime.png", dpi=dpi, bbox_inches='tight')
         plt.close(fig)
@@ -754,10 +733,6 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
         ax.legend(frameon=False)
         ax.set_ylim(0, 1.1)
         ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
-        try:
-            sns.despine()
-        except:
-            pass
         fig.tight_layout()
         fig.savefig(output_dir / "autocorrelation.png", dpi=dpi, bbox_inches='tight')
         plt.close(fig)
@@ -777,10 +752,6 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
                 ax.set_title(f'Radial Distribution Function: {pair_name}', fontsize=14, fontweight='bold', color='#2C3E50')
                 ax.set_xlim(0, 8)
                 ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
-                try:
-                    sns.despine()
-                except:
-                    pass
                 fig.tight_layout()
                 
                 # Save as rdf_PairName.png, replacing '-' with '_' for filename consistency if desired
@@ -822,11 +793,7 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
             autotext.set_weight('bold')
             
         axes[1].set_title('H-bond Strength Classification', fontsize=12, fontweight='bold', color='#2C3E50')
-    
-    try:
-        sns.despine()
-    except:
-        pass
+
     fig.tight_layout()
     fig.savefig(output_dir / "clustering_strength.png", dpi=dpi, bbox_inches='tight')
     plt.close(fig)
@@ -1051,12 +1018,7 @@ def generate_ml_plots(ml_results: Dict, output_dir: Path, dpi: int, timestep_fs:
             ax.set_title('PCA Components Evolution', fontsize=14, fontweight='bold', color='#2C3E50')
             ax.legend(frameon=False)
             ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
-            
-            try:
-                sns.despine()
-            except:
-                pass
-                
+
             fig.tight_layout()
             fig.savefig(output_dir / "pca_time_series.png", dpi=dpi, bbox_inches='tight')
             plt.close(fig)

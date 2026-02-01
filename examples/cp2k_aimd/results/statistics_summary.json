@@ -68,5 +68,12 @@
     "persistent_homology": {
       "available": true
     }
+  },
+  "topological_machine_learning": {
+    "pca_explained_variance": [
+      0.16991756856441498,
+      0.1397571861743927
+    ],
+    "feature_extraction": "Cell2Vec (Embedding) + SAN (TNN)"
   }
 }
