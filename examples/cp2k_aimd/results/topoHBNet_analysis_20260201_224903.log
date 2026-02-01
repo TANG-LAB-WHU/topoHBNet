@@ -1,0 +1,141 @@
+======================================================================
+CP2K AIMD Hydrogen Bond Topology Analysis
+======================================================================
+    Log file: C:\Users\SIQI\Documents\Github\topoHBNet\examples\cp2k_aimd\results\topoHBNet_analysis_20260201_224903.log
+
+Configuration:
+    Timestep: 0.5 fs
+    Sample interval: every 1 frames
+    H-bond criteria: D-A < 3.5 A, H-A < 2.5 A, angle > 120.0 deg
+    Persistence frame: all
+    Output DPI: 600
+    GUDHI available: True
+
+[1] Parsing trajectory with ASE backend...
+    Loaded 501 frames
+    Atoms per frame: 332
+    Simulation time: 250.5 fs
+    Oxygen atoms: 162, Hydrogen atoms: 107
+    Elements: C, H, K, La, O, P
+
+[2] Initializing analyzers...
+
+[3] Analyzing trajectory (every 1 frames)...
+    Processed 50/501 frames...
+    Processed 100/501 frames...
+    Processed 150/501 frames...
+    Processed 200/501 frames...
+    Processed 250/501 frames...
+    Processed 300/501 frames...
+    Processed 350/501 frames...
+    Processed 400/501 frames...
+    Processed 450/501 frames...
+    Processed 500/501 frames...
+    Completed basic analysis of 501 frames
+
+[4] Running advanced analysis...
+    Computing coordination numbers...
+    Computing degree distribution...
+    Computing H-bond lifetimes...
+    Computing autocorrelation function...
+    Computing clustering coefficients...
+    Computing RDFs for multiple pairs...
+        RDF: O-O
+        RDF: O-H
+        RDF: H-H
+        RDF: La-O
+        RDF: K-O
+        RDF: P-O
+    Classifying H-bond strength...
+    Computing persistent homology...
+        Computing persistence for all 501 frames...
+            Processed 100/501 frames...
+            Processed 200/501 frames...
+            Processed 300/501 frames...
+            Processed 400/501 frames...
+            Processed 500/501 frames...
+
+[5] Summary Statistics:
+    H-bonds: 30.0 +/- 3.1
+    Coordination: 1.68 +/- 0.75
+    H-bond lifetime: 120.97 fs
+    Clustering coeff: 0.018
+    H-bond strength: Strong 40.1%, Moderate 46.5%, Weak 13.4%
+
+[5.5] Running Topological Machine Learning analysis...
+    Running TML on 501 frames...
+        Generating Cell2Vec embeddings...
+        Extracting TNN features (SAN forward pass)...
+        Using device: cuda
+    Saved: similarity_heatmap.png, similarity_heatmap.svg
+    Saved: embedding_pca.png, embedding_pca.svg
+    Saved: pca_time_series.png, pca_time_series.svg
+
+[6] Saving results...
+    Saved: analysis_results.json
+    Saved: frame_embeddings.npy
+    Saved: tnn_features.npy
+    Saved: statistics_summary.json
+
+[6.5] Saving raw data to CSV in raw_data_csv...
+    Saved: dynamics_topology.csv
+    Saved: property_autocorrelation.csv
+    Saved: clustering_coefficient.csv
+    Saved: rdf_O_O.csv
+    Saved: rdf_O_H.csv
+    Saved: rdf_H_H.csv
+    Saved: rdf_La_O.csv
+    Saved: rdf_K_O.csv
+    Saved: rdf_P_O.csv
+    Saved: coordination_raw_obs.csv
+    Saved: degree_raw_obs.csv
+    Saved: ml_pca_components.csv
+    Saved: ml_pca_variance.csv
+    Saved: ml_frame_embeddings.csv
+    Saved: ml_similarity_matrix.csv
+    Saved: persistence_dynamics.csv
+    Done saving raw data.
+
+
+[7] Generating plots...
+    Saved: hbond_dynamics.png, hbond_dynamics.svg
+    Saved: betti_dynamics.png, betti_dynamics.svg
+    Saved: hbond_distributions.png, hbond_distributions.svg
+
+    === H-bond Geometry Distribution Summary ===
+    [D-A Distance]
+      Samples: 15,036
+      Mean / Median / Std: 2.903 / 2.872 / 0.225 Å
+      25% / 75% (IQR): 2.716 / 3.093 Å
+      Skewness: 0.320
+      KDE Peaks: 3 (main=2.722 Å; all=[2.722, 3.106, 3.202] Å)
+    [H-A Distance]
+      Samples: 15,036
+      Mean / Median / Std: 1.979 / 1.953 / 0.270 Å
+      25% / 75% (IQR): 1.749 / 2.204 Å
+      Skewness: 0.212
+      KDE Peaks: 3 (main=1.726 Å; all=[1.726, 1.969, 2.398] Å)
+    [D-H-A Angle]
+      Samples: 15,036
+      Mean / Median / Std: 158.0 / 160.9 / 13.6°
+      25% / 75% (IQR): 149.2 / 169.0°
+      Skewness: -0.713
+      KDE Peaks: 1 (main=171.0°; all=[171.0]°)
+    Saved: coordination_degree.png, coordination_degree.svg
+    Saved: hbond_lifetime.png, hbond_lifetime.svg
+    Saved: autocorrelation.png, autocorrelation.svg
+    Saved: rdf_O_O.png, rdf_O_O.svg
+    Saved: rdf_O_H.png, rdf_O_H.svg
+    Saved: rdf_H_H.png, rdf_H_H.svg
+    Saved: rdf_La_O.png, rdf_La_O.svg
+    Saved: rdf_K_O.png, rdf_K_O.svg
+    Saved: rdf_P_O.png, rdf_P_O.svg
+    Saved: clustering_strength.png, clustering_strength.svg
+    Saved: persistence_barcode.png, persistence_barcode.svg
+    Saved: persistence_diagram.png, persistence_diagram.svg
+    Saved: persistence_dynamics.png, persistence_dynamics.svg
+
+======================================================================
+Analysis complete!
+Results saved to: C:\Users\SIQI\Documents\Github\topoHBNet\examples\cp2k_aimd\results
+======================================================================

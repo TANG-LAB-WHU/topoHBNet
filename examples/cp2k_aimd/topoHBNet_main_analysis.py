@@ -14,9 +14,9 @@ Features:
 - Topological Machine Learning (Embedding, TNN feature extraction, PCA)
 
 Usage:
-    python example_analysis.py                        # Use default parameters
-    python example_analysis.py --run-ml               # Run with topological ML
-    python example_analysis.py --sample-interval 5    # Analyze every 5 frames
+    python topoHBNet_main_analysis.py                        # Use default parameters
+    python topoHBNet_main_analysis.py --run-ml               # Run with topological ML
+    python topoHBNet_main_analysis.py --sample-interval 5    # Analyze every 5 frames
 
 Output Files:
 - analysis_results.json: Per-frame analysis data
@@ -34,10 +34,12 @@ Output Files:
 import sys
 import json
 import argparse
-import numpy as np
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Set, Tuple, Optional
 from collections import defaultdict
+
+import numpy as np
 
 # Add parent directory to path for development
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -62,6 +64,29 @@ try:
     HAS_GUDHI = True
 except ImportError:
     pass
+
+HAS_SCIPY = False
+try:
+    import scipy.stats
+    import scipy.signal
+    HAS_SCIPY = True
+except ImportError:
+    pass
+
+
+class _Tee:
+    """Write to multiple streams (e.g. stdout and a log file)."""
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+            s.flush()
+
+    def flush(self):
+        for s in self.streams:
+            s.flush()
 
 
 def parse_args():
@@ -102,6 +127,22 @@ def parse_args():
                         help='Run topological machine learning analysis')
     parser.add_argument('--ml-dim', type=int, default=32,
                         help='Embedding/Hidden dimension for ML')
+    
+    # Persistence homology parameters
+    parser.add_argument('--persistence-frame', type=str, default='all',
+                        help='Frame for persistence diagram: "all" (default), "middle", "first", "last", or integer index')
+    parser.add_argument('--persistence-barcode-legend-loc', type=str, default='upper left',
+                        help='Legend position for persistence barcode: e.g. "upper right", "lower left"')
+    parser.add_argument('--persistence-diagram-legend-loc', type=str, default='lower right',
+                        help='Legend position for persistence diagram: e.g. "lower right", "upper left"')
+    parser.add_argument('--persistence-dynamics-legend-loc', type=str, default='upper right',
+                        help='Legend position for persistence_dynamics subplots: e.g. "upper right", "lower left"')
+    parser.add_argument('--persistence-barcode-legend-fontsize', type=float, default=None,
+                        help='Legend font size for persistence barcode (e.g. 10, 12). Default: matplotlib default')
+    parser.add_argument('--persistence-diagram-legend-fontsize', type=float, default=None,
+                        help='Legend font size for persistence diagram (e.g. 10, 12). Default: matplotlib default')
+    parser.add_argument('--persistence-dynamics-legend-fontsize', type=float, default=None,
+                        help='Legend font size for persistence_dynamics (e.g. 10, 12). Default: matplotlib default')
     
     return parser.parse_args()
 
@@ -463,46 +504,158 @@ def classify_hbond_strength(results: List[Dict]) -> Dict:
     }
 
 
-def compute_persistent_homology(results: List[Dict], frames: List[Frame]) -> Dict:
+def _compute_single_frame_persistence(frame: Frame, max_edge_length: float = 5.0) -> Dict:
+    """
+    Compute persistence for a single frame.
+    
+    Returns dict with 'H0', 'H1' barcode lists and statistics.
+    """
+    o_indices = np.where(frame.symbols == 'O')[0]
+    if len(o_indices) < 3:
+        return {'H0': [], 'H1': [], 'total_persistence_H0': 0, 'total_persistence_H1': 0,
+                'n_features_H0': 0, 'n_features_H1': 0}
+    
+    o_positions = frame.positions[o_indices]
+    
+    # Build Rips complex on oxygen positions
+    rips = gudhi.RipsComplex(points=o_positions, max_edge_length=max_edge_length)
+    st = rips.create_simplex_tree(max_dimension=2)
+    st.compute_persistence()
+    
+    barcodes = {'H0': [], 'H1': []}
+    
+    for dim, (birth, death) in st.persistence():
+        death_val = death if death < float('inf') else max_edge_length
+        if dim == 0:
+            barcodes['H0'].append([birth, death_val])
+        elif dim == 1:
+            barcodes['H1'].append([birth, death_val])
+    
+    # Compute statistics
+    h0_lifetimes = [d - b for b, d in barcodes['H0']]
+    h1_lifetimes = [d - b for b, d in barcodes['H1']]
+    
+    return {
+        'H0': barcodes['H0'],
+        'H1': barcodes['H1'],
+        'total_persistence_H0': sum(h0_lifetimes) if h0_lifetimes else 0,
+        'total_persistence_H1': sum(h1_lifetimes) if h1_lifetimes else 0,
+        'n_features_H0': len(barcodes['H0']),
+        'n_features_H1': len(barcodes['H1']),
+        'mean_lifetime_H0': np.mean(h0_lifetimes) if h0_lifetimes else 0,
+        'mean_lifetime_H1': np.mean(h1_lifetimes) if h1_lifetimes else 0,
+    }
+
+
+def compute_persistent_homology(results: List[Dict], frames: List[Frame], 
+                                 frame_selection: str = 'middle') -> Dict:
     """
     Compute persistent homology using GUDHI (if available).
-    Uses Rips complex on oxygen positions with H-bond edges.
+    
+    Persistence diagrams/barcodes are computed for point clouds (oxygen positions).
+    
+    Parameters
+    ----------
+    results : List[Dict]
+        Analysis results for each frame.
+    frames : List[Frame]
+        List of trajectory frames (sampled).
+    frame_selection : str
+        Which frame(s) to use for persistence:
+        - 'all': ALL frames (default; computes persistence for each frame, returns time series)
+        - 'middle': middle frame
+        - 'first': first frame
+        - 'last': last frame
+        - integer string (e.g., '100'): specific frame index
+    
+    Returns
+    -------
+    Dict with keys:
+        - 'available': bool
+        - 'frame_index': int (0-based index of representative frame for barcode plot)
+        - 'total_frames': int (total number of frames)
+        - 'barcodes': dict with 'H0' and 'H1' lists (for representative frame)
+        - 'all_frames': bool (True if all frames were analyzed)
+        - 'dynamics': dict (only if all_frames=True) with time series of persistence stats
     """
     if not HAS_GUDHI:
         return {'available': False, 'message': 'GUDHI not installed'}
     
-    # Use middle frame for demonstration
-    mid_idx = len(frames) // 2
-    frame = frames[mid_idx]
-    r = results[mid_idx]
+    total_frames = len(frames)
     
-    o_indices = np.where(frame.symbols == 'O')[0]
-    if len(o_indices) < 3:
-        return {'available': True, 'barcodes': []}
+    # Handle 'all' frames mode
+    if frame_selection == 'all':
+        print(f"        Computing persistence for all {total_frames} frames...")
+        
+        # Initialize time series arrays
+        dynamics = {
+            'total_persistence_H0': [],
+            'total_persistence_H1': [],
+            'n_features_H0': [],
+            'n_features_H1': [],
+            'mean_lifetime_H0': [],
+            'mean_lifetime_H1': [],
+        }
+        
+        all_barcodes = []
+        
+        for i, frame in enumerate(frames):
+            result = _compute_single_frame_persistence(frame)
+            all_barcodes.append({'H0': result['H0'], 'H1': result['H1']})
+            
+            dynamics['total_persistence_H0'].append(result['total_persistence_H0'])
+            dynamics['total_persistence_H1'].append(result['total_persistence_H1'])
+            dynamics['n_features_H0'].append(result['n_features_H0'])
+            dynamics['n_features_H1'].append(result['n_features_H1'])
+            dynamics['mean_lifetime_H0'].append(result['mean_lifetime_H0'])
+            dynamics['mean_lifetime_H1'].append(result['mean_lifetime_H1'])
+            
+            if (i + 1) % 100 == 0:
+                print(f"            Processed {i + 1}/{total_frames} frames...")
+        
+        # Convert to numpy arrays
+        for key in dynamics:
+            dynamics[key] = np.array(dynamics[key])
+        
+        # Use middle frame for representative barcode plot
+        mid_idx = total_frames // 2
+        
+        return {
+            'available': True,
+            'all_frames': True,
+            'frame_index': mid_idx,
+            'total_frames': total_frames,
+            'barcodes': all_barcodes[mid_idx],
+            'dynamics': dynamics,
+            'all_barcodes': all_barcodes,  # Keep all for potential further analysis
+        }
     
-    o_positions = frame.positions[o_indices]
+    # Single frame mode
+    if frame_selection == 'middle':
+        frame_idx = total_frames // 2
+    elif frame_selection == 'first':
+        frame_idx = 0
+    elif frame_selection == 'last':
+        frame_idx = total_frames - 1
+    else:
+        # Try to parse as integer
+        try:
+            frame_idx = int(frame_selection)
+            if frame_idx < 0 or frame_idx >= total_frames:
+                print(f"    Warning: frame index {frame_idx} out of range [0, {total_frames-1}], using middle frame")
+                frame_idx = total_frames // 2
+        except ValueError:
+            print(f"    Warning: invalid frame_selection '{frame_selection}', using middle frame")
+            frame_idx = total_frames // 2
     
-    # Build Rips complex
-    rips = gudhi.RipsComplex(points=o_positions, max_edge_length=5.0)
-    st = rips.create_simplex_tree(max_dimension=2)
-    st.compute_persistence()
-    
-    # Extract barcodes
-    barcodes = {
-        'H0': [],  # Connected components
-        'H1': []   # Loops/holes
-    }
-    
-    for dim, (birth, death) in st.persistence():
-        if dim == 0:
-            barcodes['H0'].append([birth, death if death < float('inf') else 5.0])
-        elif dim == 1:
-            barcodes['H1'].append([birth, death if death < float('inf') else 5.0])
+    result = _compute_single_frame_persistence(frames[frame_idx])
     
     return {
         'available': True,
-        'frame_index': mid_idx,
-        'barcodes': barcodes
+        'all_frames': False,
+        'frame_index': frame_idx,
+        'total_frames': total_frames,
+        'barcodes': {'H0': result['H0'], 'H1': result['H1']}
     }
 
 
@@ -523,6 +676,106 @@ COLORS = {
     'gray_grid': '#EBEDEF',
     'pie': ['#82E0AA', '#F5CBA7', '#F1948A'] # Green, Orange, Red soft
 }
+
+
+def plot_persistence_dynamics(dynamics: Dict, timestep_fs: float, sample_interval: int,
+                               save_path: Path, dpi: int = 600,
+                               legend_loc: str = 'upper right',
+                               legend_fontsize: Optional[float] = None):
+    """
+    Plot persistence dynamics over time (all frames analysis).
+    
+    Creates a 2x2 subplot showing:
+    - Total persistence (H0 and H1) over time
+    - Number of features (H0 and H1) over time
+    - Mean lifetime (H0 and H1) over time
+    - Persistence ratio H1/H0 over time
+    
+    Parameters
+    ----------
+    dynamics : Dict
+        Dictionary with time series arrays for persistence statistics.
+    timestep_fs : float
+        MD timestep in femtoseconds.
+    sample_interval : int
+        Sample interval (frames between samples).
+    save_path : Path
+        Path to save the figure.
+    dpi : int
+        Figure resolution.
+    legend_loc : str
+        Legend position for all subplots (e.g. 'upper right', 'lower left').
+    legend_fontsize : float, optional
+        Legend font size. If None, use matplotlib default.
+    """
+    import matplotlib.pyplot as plt
+    
+    n_frames = len(dynamics['total_persistence_H0'])
+    times = np.arange(n_frames) * sample_interval * timestep_fs  # Time in fs
+    
+    legend_kw = {'frameon': False, 'loc': legend_loc}
+    if legend_fontsize is not None:
+        legend_kw['fontsize'] = legend_fontsize
+    
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig.suptitle('Persistence Dynamics (All Frames)', fontsize=14, fontweight='bold', color='#2C3E50')
+    
+    # 1. Total persistence over time
+    ax = axes[0, 0]
+    ax.plot(times, dynamics['total_persistence_H0'], color=COLORS['green_soft'], 
+            linewidth=1.5, label='H0 (components)', alpha=0.8)
+    ax.plot(times, dynamics['total_persistence_H1'], color=COLORS['orange_soft'], 
+            linewidth=1.5, label='H1 (loops)', alpha=0.8)
+    ax.set_xlabel('Time (fs)', fontsize=11)
+    ax.set_ylabel('Total Persistence (Å)', fontsize=11)
+    ax.set_title('Total Persistence Over Time', fontsize=12, fontweight='bold', color='#2C3E50')
+    ax.legend(**legend_kw)
+    ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
+    
+    # 2. Number of features over time
+    ax = axes[0, 1]
+    ax.plot(times, dynamics['n_features_H0'], color=COLORS['green_soft'], 
+            linewidth=1.5, label='H0 (components)', alpha=0.8)
+    ax.plot(times, dynamics['n_features_H1'], color=COLORS['orange_soft'], 
+            linewidth=1.5, label='H1 (loops)', alpha=0.8)
+    ax.set_xlabel('Time (fs)', fontsize=11)
+    ax.set_ylabel('Number of Features', fontsize=11)
+    ax.set_title('Topological Feature Count Over Time', fontsize=12, fontweight='bold', color='#2C3E50')
+    ax.legend(**legend_kw)
+    ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
+    
+    # 3. Mean lifetime over time
+    ax = axes[1, 0]
+    ax.plot(times, dynamics['mean_lifetime_H0'], color=COLORS['green_soft'], 
+            linewidth=1.5, label='H0 (components)', alpha=0.8)
+    ax.plot(times, dynamics['mean_lifetime_H1'], color=COLORS['orange_soft'], 
+            linewidth=1.5, label='H1 (loops)', alpha=0.8)
+    ax.set_xlabel('Time (fs)', fontsize=11)
+    ax.set_ylabel('Mean Lifetime (Å)', fontsize=11)
+    ax.set_title('Mean Feature Lifetime Over Time', fontsize=12, fontweight='bold', color='#2C3E50')
+    ax.legend(**legend_kw)
+    ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
+    
+    # 4. H1/H0 ratio (loop complexity relative to connectivity)
+    ax = axes[1, 1]
+    # Avoid division by zero
+    h0_total = dynamics['total_persistence_H0']
+    h1_total = dynamics['total_persistence_H1']
+    ratio = np.divide(h1_total, h0_total, out=np.zeros_like(h1_total), where=h0_total > 0)
+    ax.plot(times, ratio, color=COLORS['purple_soft'], linewidth=1.5, alpha=0.8)
+    ax.axhline(y=np.mean(ratio), color=COLORS['red_soft'], linestyle='--', 
+               linewidth=1.5, label=f'Mean: {np.mean(ratio):.3f}')
+    ax.set_xlabel('Time (fs)', fontsize=11)
+    ax.set_ylabel('H1/H0 Persistence Ratio', fontsize=11)
+    ax.set_title('Loop-to-Component Persistence Ratio', fontsize=12, fontweight='bold', color='#2C3E50')
+    ax.legend(**legend_kw)
+    ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
+    
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(save_path, dpi=dpi, bbox_inches='tight')
+    fig.savefig(Path(save_path).with_suffix('.svg'), format='svg', bbox_inches='tight')
+    plt.close(fig)
+
 
 def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: float, dpi: int):
     """Generate basic visualization plots."""
@@ -565,8 +818,9 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
     ax.grid(True, color=COLORS['gray_grid'], alpha=0.6)
     fig.tight_layout()
     fig.savefig(output_dir / "hbond_dynamics.png", dpi=dpi, bbox_inches='tight')
+    fig.savefig(output_dir / "hbond_dynamics.svg", format='svg', bbox_inches='tight')
     plt.close(fig)
-    print(f"    Saved: hbond_dynamics.png")
+    print(f"    Saved: hbond_dynamics.png, hbond_dynamics.svg")
     
     # 2. Betti Number Dynamics
     fig, axes = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
@@ -596,8 +850,9 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
 
     fig.tight_layout()
     fig.savefig(output_dir / "betti_dynamics.png", dpi=dpi, bbox_inches='tight')
+    fig.savefig(output_dir / "betti_dynamics.svg", format='svg', bbox_inches='tight')
     plt.close(fig)
-    print(f"    Saved: betti_dynamics.png")
+    print(f"    Saved: betti_dynamics.png, betti_dynamics.svg")
     
     # 3. H-bond Distributions
     fig, axes = plt.subplots(1, 3, figsize=(14, 4))
@@ -647,13 +902,125 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
     fig.suptitle('Hydrogen Bond Geometry Distributions', fontsize=14, fontweight='bold', color='#2C3E50', y=1.05)
     fig.tight_layout()
     fig.savefig(output_dir / "hbond_distributions.png", dpi=dpi, bbox_inches='tight')
+    fig.savefig(output_dir / "hbond_distributions.svg", format='svg', bbox_inches='tight')
     plt.close(fig)
-    print(f"    Saved: hbond_distributions.png")
+    print(f"    Saved: hbond_distributions.png, hbond_distributions.svg")
+    
+    # =========================================================================
+    # Log distribution shape summary (mean, std, median, IQR, skewness, peaks)
+    # =========================================================================
+    print("\n    === H-bond Geometry Distribution Summary ===")
+    
+    # D-A Distance
+    if all_distances_da and len(all_distances_da) >= 10:
+        n_da = len(all_distances_da)
+        mean_da = np.mean(all_distances_da)
+        std_da = np.std(all_distances_da)
+        med_da = np.percentile(all_distances_da, 50)
+        p25_da, p75_da = np.percentile(all_distances_da, [25, 75])
+        
+        # Skewness and peak detection (if scipy available)
+        skew_da = scipy.stats.skew(all_distances_da) if HAS_SCIPY else None
+        n_peak_da, peak_pos_da, main_peak_da = 0, [], None
+        if HAS_SCIPY:
+            try:
+                kde_da = scipy.stats.gaussian_kde(all_distances_da)
+                x_grid = np.linspace(min(all_distances_da), max(all_distances_da), 300)
+                pdf_da = kde_da(x_grid)
+                peaks_idx, _ = scipy.signal.find_peaks(pdf_da, prominence=0.01 * np.max(pdf_da))
+                n_peak_da = len(peaks_idx)
+                if n_peak_da:
+                    peak_pos_da = x_grid[peaks_idx]
+                    main_peak_da = peak_pos_da[np.argmax(pdf_da[peaks_idx])]
+            except Exception:
+                pass
+        
+        print(f"    [D-A Distance]")
+        print(f"      Samples: {n_da:,}")
+        print(f"      Mean / Median / Std: {mean_da:.3f} / {med_da:.3f} / {std_da:.3f} Å")
+        print(f"      25% / 75% (IQR): {p25_da:.3f} / {p75_da:.3f} Å")
+        if skew_da is not None:
+            print(f"      Skewness: {skew_da:.3f}")
+        if n_peak_da:
+            peaks_str = ", ".join(f"{p:.3f}" for p in sorted(peak_pos_da))
+            print(f"      KDE Peaks: {n_peak_da} (main={main_peak_da:.3f} Å; all=[{peaks_str}] Å)")
+    
+    # H-A Distance
+    if all_distances_ha and len(all_distances_ha) >= 10:
+        n_ha = len(all_distances_ha)
+        mean_ha = np.mean(all_distances_ha)
+        std_ha = np.std(all_distances_ha)
+        med_ha = np.percentile(all_distances_ha, 50)
+        p25_ha, p75_ha = np.percentile(all_distances_ha, [25, 75])
+        
+        skew_ha = scipy.stats.skew(all_distances_ha) if HAS_SCIPY else None
+        n_peak_ha, peak_pos_ha, main_peak_ha = 0, [], None
+        if HAS_SCIPY:
+            try:
+                kde_ha = scipy.stats.gaussian_kde(all_distances_ha)
+                x_grid = np.linspace(min(all_distances_ha), max(all_distances_ha), 300)
+                pdf_ha = kde_ha(x_grid)
+                peaks_idx, _ = scipy.signal.find_peaks(pdf_ha, prominence=0.01 * np.max(pdf_ha))
+                n_peak_ha = len(peaks_idx)
+                if n_peak_ha:
+                    peak_pos_ha = x_grid[peaks_idx]
+                    main_peak_ha = peak_pos_ha[np.argmax(pdf_ha[peaks_idx])]
+            except Exception:
+                pass
+        
+        print(f"    [H-A Distance]")
+        print(f"      Samples: {n_ha:,}")
+        print(f"      Mean / Median / Std: {mean_ha:.3f} / {med_ha:.3f} / {std_ha:.3f} Å")
+        print(f"      25% / 75% (IQR): {p25_ha:.3f} / {p75_ha:.3f} Å")
+        if skew_ha is not None:
+            print(f"      Skewness: {skew_ha:.3f}")
+        if n_peak_ha:
+            peaks_str = ", ".join(f"{p:.3f}" for p in sorted(peak_pos_ha))
+            print(f"      KDE Peaks: {n_peak_ha} (main={main_peak_ha:.3f} Å; all=[{peaks_str}] Å)")
+    
+    # D-H-A Angle
+    if all_angles and len(all_angles) >= 10:
+        n_ang = len(all_angles)
+        mean_ang = np.mean(all_angles)
+        std_ang = np.std(all_angles)
+        med_ang = np.percentile(all_angles, 50)
+        p25_ang, p75_ang = np.percentile(all_angles, [25, 75])
+        
+        skew_ang = scipy.stats.skew(all_angles) if HAS_SCIPY else None
+        n_peak_ang, peak_pos_ang, main_peak_ang = 0, [], None
+        if HAS_SCIPY:
+            try:
+                kde_ang = scipy.stats.gaussian_kde(all_angles)
+                x_grid = np.linspace(min(all_angles), max(all_angles), 300)
+                pdf_ang = kde_ang(x_grid)
+                peaks_idx, _ = scipy.signal.find_peaks(pdf_ang, prominence=0.01 * np.max(pdf_ang))
+                n_peak_ang = len(peaks_idx)
+                if n_peak_ang:
+                    peak_pos_ang = x_grid[peaks_idx]
+                    main_peak_ang = peak_pos_ang[np.argmax(pdf_ang[peaks_idx])]
+            except Exception:
+                pass
+        
+        print(f"    [D-H-A Angle]")
+        print(f"      Samples: {n_ang:,}")
+        print(f"      Mean / Median / Std: {mean_ang:.1f} / {med_ang:.1f} / {std_ang:.1f}°")
+        print(f"      25% / 75% (IQR): {p25_ang:.1f} / {p75_ang:.1f}°")
+        if skew_ang is not None:
+            print(f"      Skewness: {skew_ang:.3f}")
+        if n_peak_ang:
+            peaks_str = ", ".join(f"{p:.1f}" for p in sorted(peak_pos_ang))
+            print(f"      KDE Peaks: {n_peak_ang} (main={main_peak_ang:.1f}°; all=[{peaks_str}]°)")
 
 
 def generate_advanced_plots(results: List[Dict], frames: List[Frame], 
                            advanced_stats: Dict, output_dir: Path, 
-                           timestep_fs: float, sample_interval: int, dpi: int):
+                           timestep_fs: float, sample_interval: int, dpi: int,
+                           barcode_legend_loc: str = 'upper right',
+                           diagram_legend_loc: str = 'lower right',
+                           barcode_legend_fontsize: Optional[float] = None,
+                           diagram_legend_fontsize: Optional[float] = None,
+                           dynamics_legend_loc: str = 'upper right',
+                           dynamics_legend_fontsize: Optional[float] = None):
     """Generate advanced analysis plots."""
     import matplotlib.pyplot as plt
     sns = None
@@ -697,8 +1064,9 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
 
     fig.tight_layout()
     fig.savefig(output_dir / "coordination_degree.png", dpi=dpi, bbox_inches='tight')
+    fig.savefig(output_dir / "coordination_degree.svg", format='svg', bbox_inches='tight')
     plt.close(fig)
-    print(f"    Saved: coordination_degree.png")
+    print(f"    Saved: coordination_degree.png, coordination_degree.svg")
     
     # 5. H-bond Lifetime Distribution
     lifetime_data = advanced_stats['lifetime']
@@ -715,8 +1083,9 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
         ax.grid(axis='y', color=COLORS['gray_grid'], alpha=0.5)
         fig.tight_layout()
         fig.savefig(output_dir / "hbond_lifetime.png", dpi=dpi, bbox_inches='tight')
+        fig.savefig(output_dir / "hbond_lifetime.svg", format='svg', bbox_inches='tight')
         plt.close(fig)
-        print(f"    Saved: hbond_lifetime.png")
+        print(f"    Saved: hbond_lifetime.png, hbond_lifetime.svg")
     
     # 6. Autocorrelation Function
     acf_data = advanced_stats['autocorrelation']
@@ -735,8 +1104,9 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
         ax.grid(True, color=COLORS['gray_grid'], alpha=0.5)
         fig.tight_layout()
         fig.savefig(output_dir / "autocorrelation.png", dpi=dpi, bbox_inches='tight')
+        fig.savefig(output_dir / "autocorrelation.svg", format='svg', bbox_inches='tight')
         plt.close(fig)
-        print(f"    Saved: autocorrelation.png")
+        print(f"    Saved: autocorrelation.png, autocorrelation.svg")
     
     # 7. RDF Individual Pairs
     rdf_all = advanced_stats['rdf']
@@ -757,8 +1127,10 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
                 # Save as rdf_PairName.png, replacing '-' with '_' for filename consistency if desired
                 filename = f"rdf_{pair_name.replace('-', '_')}.png"
                 fig.savefig(output_dir / filename, dpi=dpi, bbox_inches='tight')
+                svg_filename = Path(filename).with_suffix('.svg')
+                fig.savefig(output_dir / svg_filename, format='svg', bbox_inches='tight')
                 plt.close(fig)
-                print(f"    Saved: {filename}")
+                print(f"    Saved: {filename}, {svg_filename}")
     
     # 8. Clustering Coefficient and H-bond Strength
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -796,31 +1168,53 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
 
     fig.tight_layout()
     fig.savefig(output_dir / "clustering_strength.png", dpi=dpi, bbox_inches='tight')
+    fig.savefig(output_dir / "clustering_strength.svg", format='svg', bbox_inches='tight')
     plt.close(fig)
-    print(f"    Saved: clustering_strength.png")
+    print(f"    Saved: clustering_strength.png, clustering_strength.svg")
     
-    # 9. Persistent Homology (Barcode and Diagram)
+    # 9. Persistent Homology (Barcode, Diagram, and Dynamics)
     persistence_data = advanced_stats.get('persistence', {})
     if persistence_data.get('available') and persistence_data.get('barcodes'):
         barcodes = persistence_data['barcodes']
+        frame_idx = persistence_data['frame_index']
+        total_frames = persistence_data.get('total_frames', '?')
+        all_frames_mode = persistence_data.get('all_frames', False)
         
-        # Plot Barcode
+        # Plot Barcode (representative frame)
+        title_suffix = " [representative]" if all_frames_mode else ""
         plot_persistence_barcode(
             barcodes, 
-            title=f"Persistence Barcode (Frame {persistence_data['frame_index']})",
+            title=f"Persistence Barcode (Frame {frame_idx} / {total_frames}){title_suffix}",
             save_path=output_dir / "persistence_barcode.png",
-            dpi=dpi
+            dpi=dpi,
+            legend_loc=barcode_legend_loc,
+            legend_fontsize=barcode_legend_fontsize
         )
-        print(f"    Saved: persistence_barcode.png")
+        print(f"    Saved: persistence_barcode.png, persistence_barcode.svg")
         
-        # Plot Diagram
+        # Plot Diagram (representative frame)
         plot_persistence_diagram(
             barcodes,
-            title=f"Persistence Diagram (Frame {persistence_data['frame_index']})",
+            title=f"Persistence Diagram (Frame {frame_idx} / {total_frames}){title_suffix}",
             save_path=output_dir / "persistence_diagram.png",
-            dpi=dpi
+            dpi=dpi,
+            legend_loc=diagram_legend_loc,
+            legend_fontsize=diagram_legend_fontsize
         )
-        print(f"    Saved: persistence_diagram.png")
+        print(f"    Saved: persistence_diagram.png, persistence_diagram.svg")
+        
+        # If all frames were analyzed, plot persistence dynamics
+        if all_frames_mode and 'dynamics' in persistence_data:
+            plot_persistence_dynamics(
+                persistence_data['dynamics'],
+                timestep_fs=timestep_fs,
+                sample_interval=sample_interval,
+                save_path=output_dir / "persistence_dynamics.png",
+                dpi=dpi,
+                legend_loc=dynamics_legend_loc,
+                legend_fontsize=dynamics_legend_fontsize
+            )
+            print(f"    Saved: persistence_dynamics.png, persistence_dynamics.svg")
 
 
 # =============================================================================
@@ -965,8 +1359,9 @@ def generate_ml_plots(ml_results: Dict, output_dir: Path, dpi: int, timestep_fs:
             
             fig.tight_layout()
             fig.savefig(output_dir / "similarity_heatmap.png", dpi=dpi, bbox_inches='tight')
+            fig.savefig(output_dir / "similarity_heatmap.svg", format='svg', bbox_inches='tight')
             plt.close(fig)
-            print(f"    Saved: similarity_heatmap.png")
+            print(f"    Saved: similarity_heatmap.png, similarity_heatmap.svg")
         except Exception as e:
             print(f"    Warning: Similarity heatmap failed: {e}")
 
@@ -992,8 +1387,9 @@ def generate_ml_plots(ml_results: Dict, output_dir: Path, dpi: int, timestep_fs:
             
             fig.tight_layout()
             fig.savefig(output_dir / "embedding_pca.png", dpi=dpi, bbox_inches='tight')
+            fig.savefig(output_dir / "embedding_pca.svg", format='svg', bbox_inches='tight')
             plt.close(fig)
-            print(f"    Saved: embedding_pca.png")
+            print(f"    Saved: embedding_pca.png, embedding_pca.svg")
         except Exception as e:
             print(f"    Warning: PCA scatter plot failed: {e}")
         
@@ -1021,8 +1417,9 @@ def generate_ml_plots(ml_results: Dict, output_dir: Path, dpi: int, timestep_fs:
 
             fig.tight_layout()
             fig.savefig(output_dir / "pca_time_series.png", dpi=dpi, bbox_inches='tight')
+            fig.savefig(output_dir / "pca_time_series.svg", format='svg', bbox_inches='tight')
             plt.close(fig)
-            print(f"    Saved: pca_time_series.png")
+            print(f"    Saved: pca_time_series.png, pca_time_series.svg")
         except Exception as e:
             print(f"    Warning: PCA time-series plot failed: {e}")
 
@@ -1125,9 +1522,35 @@ def save_results(results: List[Dict], advanced_stats: Dict, output_dir: Path, ml
             'hbond_strength': advanced_stats['strength'],
             'persistent_homology': {
                 'available': advanced_stats['persistence']['available'],
+                'frame_index': advanced_stats['persistence'].get('frame_index'),
+                'total_frames': advanced_stats['persistence'].get('total_frames'),
+                'all_frames_analyzed': advanced_stats['persistence'].get('all_frames', False),
             }
         }
     }
+    
+    # Add persistence dynamics statistics if all frames were analyzed
+    persistence_data = advanced_stats.get('persistence', {})
+    if persistence_data.get('all_frames') and 'dynamics' in persistence_data:
+        dynamics = persistence_data['dynamics']
+        stats['advanced_statistics']['persistent_homology']['dynamics_summary'] = {
+            'total_persistence_H0': {
+                'mean': float(np.mean(dynamics['total_persistence_H0'])),
+                'std': float(np.std(dynamics['total_persistence_H0'])),
+            },
+            'total_persistence_H1': {
+                'mean': float(np.mean(dynamics['total_persistence_H1'])),
+                'std': float(np.std(dynamics['total_persistence_H1'])),
+            },
+            'n_features_H0': {
+                'mean': float(np.mean(dynamics['n_features_H0'])),
+                'std': float(np.std(dynamics['n_features_H0'])),
+            },
+            'n_features_H1': {
+                'mean': float(np.mean(dynamics['n_features_H1'])),
+                'std': float(np.std(dynamics['n_features_H1'])),
+            },
+        }
     
     if ml_results:
         stats['topological_machine_learning'] = {
@@ -1296,6 +1719,27 @@ def save_raw_data(results: List[Dict], advanced_stats: Dict, ml_results: Optiona
                 except ImportError:
                     pass
 
+    # 7. Persistence Dynamics (if all frames were analyzed)
+    persistence_data = advanced_stats.get('persistence', {})
+    if persistence_data.get('all_frames') and 'dynamics' in persistence_data:
+        dynamics = persistence_data['dynamics']
+        n_frames = len(dynamics['total_persistence_H0'])
+        time_arr = np.arange(n_frames) * sample_interval * timestep_fs
+        
+        df_persist = pd.DataFrame({
+            'frame_idx': range(n_frames),
+            'time_fs': time_arr,
+            'time_ps': time_arr / 1000.0,
+            'total_persistence_H0': dynamics['total_persistence_H0'],
+            'total_persistence_H1': dynamics['total_persistence_H1'],
+            'n_features_H0': dynamics['n_features_H0'],
+            'n_features_H1': dynamics['n_features_H1'],
+            'mean_lifetime_H0': dynamics['mean_lifetime_H0'],
+            'mean_lifetime_H1': dynamics['mean_lifetime_H1'],
+        })
+        df_persist.to_csv(out_path / "persistence_dynamics.csv", index=False)
+        print(f"    Saved: persistence_dynamics.csv")
+
     print("    Done saving raw data.\n")
 
 
@@ -1312,14 +1756,35 @@ def main():
     if not traj_file.exists():
         print(f"Error: Trajectory file not found: {traj_file}")
         return
-    
+
+    # Redirect stdout/stderr to both terminal and log file in default results dir
+    output_dir = Path(__file__).parent / args.output_dir
+    output_dir.mkdir(exist_ok=True)
+    log_name = f"topoHBNet_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+    log_path = output_dir / log_name
+    log_file = open(log_path, "w", encoding="utf-8")
+    _orig_stdout, _orig_stderr = sys.stdout, sys.stderr
+    sys.stdout = _Tee(_orig_stdout, log_file)
+    sys.stderr = _Tee(_orig_stderr, log_file)
+    try:
+        _main_body(args, traj_file, output_dir, log_path)
+    finally:
+        sys.stdout = _orig_stdout
+        sys.stderr = _orig_stderr
+        log_file.close()
+
+
+def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
+    """Main analysis logic (stdout/stderr are already teed to log)."""
     print("=" * 70)
     print("CP2K AIMD Hydrogen Bond Topology Analysis")
     print("=" * 70)
+    print(f"    Log file: {log_path}")
     print(f"\nConfiguration:")
     print(f"    Timestep: {args.timestep} fs")
     print(f"    Sample interval: every {args.sample_interval} frames")
     print(f"    H-bond criteria: D-A < {args.r_da_max} A, H-A < {args.r_ha_max} A, angle > {args.angle_min} deg")
+    print(f"    Persistence frame: {args.persistence_frame}")
     print(f"    Output DPI: {args.dpi}")
     print(f"    GUDHI available: {HAS_GUDHI}")
     
@@ -1409,7 +1874,9 @@ def main():
     advanced_stats['strength'] = classify_hbond_strength(results)
     
     print("    Computing persistent homology...")
-    advanced_stats['persistence'] = compute_persistent_homology(results, sampled_frames)
+    advanced_stats['persistence'] = compute_persistent_homology(
+        results, sampled_frames, frame_selection=args.persistence_frame
+    )
     
     # Print summary statistics
     print("\n[5] Summary Statistics:")
@@ -1421,10 +1888,6 @@ def main():
     print(f"    H-bond strength: Strong {advanced_stats['strength']['strong_pct']:.1f}%, "
           f"Moderate {advanced_stats['strength']['moderate_pct']:.1f}%, "
           f"Weak {advanced_stats['strength']['weak_pct']:.1f}%")
-    
-    # Create output directory
-    output_dir = Path(__file__).parent / args.output_dir
-    output_dir.mkdir(exist_ok=True)
     
     # ML Analysis
     ml_results = {}
@@ -1446,7 +1909,13 @@ def main():
     try:
         generate_basic_plots(results, output_dir, args.timestep, args.dpi)
         generate_advanced_plots(results, sampled_frames, advanced_stats, output_dir, 
-                               args.timestep, args.sample_interval, args.dpi)
+                               args.timestep, args.sample_interval, args.dpi,
+                               barcode_legend_loc=args.persistence_barcode_legend_loc,
+                               diagram_legend_loc=args.persistence_diagram_legend_loc,
+                               barcode_legend_fontsize=args.persistence_barcode_legend_fontsize,
+                               diagram_legend_fontsize=args.persistence_diagram_legend_fontsize,
+                               dynamics_legend_loc=args.persistence_dynamics_legend_loc,
+                               dynamics_legend_fontsize=args.persistence_dynamics_legend_fontsize)
     except ImportError as e:
         print(f"    Warning: matplotlib not available: {e}")
     

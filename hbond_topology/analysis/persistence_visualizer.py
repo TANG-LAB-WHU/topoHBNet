@@ -7,6 +7,7 @@ including persistence barcodes and persistence diagrams.
 
 import matplotlib.pyplot as plt
 import numpy as np
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import matplotlib as mpl
 
@@ -18,6 +19,8 @@ def plot_persistence_barcode(
     figsize: Tuple[int, int] = (10, 6),
     save_path: Optional[str] = None,
     dpi: int = 300,
+    legend_loc: str = "upper right",
+    legend_fontsize: Optional[float] = None,
 ):
     """
     Plot persistence barcode for multiple dimensions with gradient fills.
@@ -29,6 +32,10 @@ def plot_persistence_barcode(
         figsize: Size of the figure.
         save_path: Path to save the plot. If None, the plot is displayed.
         dpi: DPI for the saved plot.
+        legend_loc: Legend position. Matplotlib loc string: 'upper right', 'upper left',
+            'lower left', 'lower right', 'right', 'center left', 'center right',
+            'lower center', 'upper center', 'center'; or (x, y) in axes coords (0-1).
+        legend_fontsize: Legend font size (e.g. 10, 12). If None, use matplotlib default.
     """
     # Premium colors
     COLORS = {
@@ -114,10 +121,10 @@ def plot_persistence_barcode(
     ax.set_xlim(0, max_epsilon)
     ax.set_ylim(-1, current_y)
     
-    # Remove spines
-    for spine in ['top', 'right', 'left']:
-        ax.spines[spine].set_visible(False)
-    ax.spines['bottom'].set_color('#BDC3C7')
+    # Keep all spines for outer border
+    for spine in ax.spines:
+        ax.spines[spine].set_visible(True)
+        ax.spines[spine].set_color('#BDC3C7')
     
     # Create a custom legend
     from matplotlib.lines import Line2D
@@ -131,12 +138,17 @@ def plot_persistence_barcode(
             c = cmap(i)
         legend_elements.append(Line2D([0], [0], color=c, lw=4, label=dim, alpha=0.8))
         
-    ax.legend(handles=legend_elements, loc='upper right', frameon=False)
+    legend_kw = {"handles": legend_elements, "loc": legend_loc, "frameon": False}
+    if legend_fontsize is not None:
+        legend_kw["fontsize"] = legend_fontsize
+    ax.legend(**legend_kw)
     
     plt.tight_layout()
     
     if save_path:
         plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+        svg_path = Path(save_path).with_suffix('.svg')
+        plt.savefig(svg_path, format='svg', bbox_inches='tight')
         plt.close()
     else:
         plt.show()
@@ -149,6 +161,8 @@ def plot_persistence_diagram(
     figsize: Tuple[int, int] = (8, 8),
     save_path: Optional[str] = None,
     dpi: int = 300,
+    legend_loc: str = "lower right",
+    legend_fontsize: Optional[float] = None,
 ):
     """
     Plot persistence diagram (Birth vs Death) for multiple dimensions.
@@ -160,6 +174,8 @@ def plot_persistence_diagram(
         figsize: Size of the figure.
         save_path: Path to save the plot. If None, the plot is displayed.
         dpi: DPI for the saved plot.
+        legend_loc: Legend position (same options as plot_persistence_barcode).
+        legend_fontsize: Legend font size (e.g. 10, 12). If None, use matplotlib default.
     """
     plt.figure(figsize=figsize)
     
@@ -191,12 +207,23 @@ def plot_persistence_diagram(
     plt.xlim(0, max_epsilon)
     plt.ylim(0, max_epsilon)
     plt.grid(True, linestyle='--', alpha=0.6)
-    plt.legend(loc='lower right')
+    legend_kw = {"loc": legend_loc}
+    if legend_fontsize is not None:
+        legend_kw["fontsize"] = legend_fontsize
+    plt.legend(**legend_kw)
+    
+    # Keep all spines for outer border
+    ax = plt.gca()
+    for spine in ax.spines:
+        ax.spines[spine].set_visible(True)
+        ax.spines[spine].set_color('#BDC3C7')
     
     plt.tight_layout()
     
     if save_path:
         plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+        svg_path = Path(save_path).with_suffix('.svg')
+        plt.savefig(svg_path, format='svg', bbox_inches='tight')
         plt.close()
     else:
         plt.show()

@@ -66,7 +66,28 @@
       "weak_pct": 13.421122638999734
     },
     "persistent_homology": {
-      "available": true
+      "available": true,
+      "frame_index": 250,
+      "total_frames": 501,
+      "all_frames_analyzed": true,
+      "dynamics_summary": {
+        "total_persistence_H0": {
+          "mean": 445.5910830970768,
+          "std": 2.5623969357546272
+        },
+        "total_persistence_H1": {
+          "mean": 44.473363374539076,
+          "std": 1.3958714137462735
+        },
+        "n_features_H0": {
+          "mean": 162.0,
+          "std": 0.0
+        },
+        "n_features_H1": {
+          "mean": 78.9441117764471,
+          "std": 3.4567285567211288
+        }
+      }
     }
   },
   "topological_machine_learning": {
