@@ -4,25 +4,31 @@ This directory contains the comprehensive analysis results from the `topoHBNet` 
 
 ## Table of Contents
 
-- [Analysis Overview](#analysis-overview)
-- [Data Files](#data-files)
-- [Visualization Outputs](#visualization-outputs)
-  - [H-bond Dynamics](#1-hbond_dynamicspng)
-  - [Betti Number Dynamics](#2-betti_dynamicspng)
-  - [H-bond Geometry Distributions](#3-hbond_distributionspng)
-  - [Coordination and Degree Distributions](#4-coordination_degreepng)
-  - [H-bond Lifetime Distribution](#5-hbond_lifetimepng)
-  - [Autocorrelation Function](#6-autocorrelationpng)
-  - [Radial Distribution Functions](#7-rdf_png-files)
-  - [Clustering and Strength Classification](#8-clustering_strengthpng)
-  - [Persistence Barcode](#9-persistence_barcodepng)
-  - [Persistence Diagram](#10-persistence_diagrampng)
-  - [Persistence Dynamics](#11-persistence_dynamicspng)
-  - [Topological ML Visualizations](#12-topological-machine-learning-plots)
+1. [Analysis Overview](#1-analysis-overview)
+2. [Data Files](#2-data-files)
+3. [Raw Data CSV Files](#3-raw-data-csv-files)
+4. [Visualization Outputs](#4-visualization-outputs)
+   - 4.1 [H-bond Dynamics](#41-hbond_dynamicspng)
+   - 4.2 [Betti Number Dynamics](#42-betti_dynamicspng)
+   - 4.3 [H-bond Geometry Distributions](#43-hbond_distributionspng)
+   - 4.4 [Coordination and Degree Distributions](#44-coordination_degreepng)
+   - 4.5 [H-bond Lifetime Distribution](#45-hbond_lifetimepng)
+   - 4.6 [Autocorrelation Function](#46-autocorrelationpng)
+   - 4.7 [Radial Distribution Functions](#47-rdf_png-files)
+   - 4.8 [Clustering and Strength Classification](#48-clustering_strengthpng)
+   - 4.9 [Persistence Barcode](#49-persistence_barcodepng)
+   - 4.10 [Persistence Diagram](#410-persistence_diagrampng)
+   - 4.11 [Persistence Dynamics](#411-persistence_dynamicspng)
+   - 4.12 [Topological ML Visualizations](#412-topological-machine-learning-plots)
+5. [Current Analysis Results Summary](#5-current-analysis-results-summary)
+6. [Physical Constants and Units](#6-physical-constants-and-units)
+7. [H-bond Detection Criteria](#7-h-bond-detection-criteria)
+8. [References](#8-references)
+9. [Log File](#9-log-file)
 
 ---
 
-## Analysis Overview
+## 1. Analysis Overview
 
 The analysis pipeline performs the following steps:
 
@@ -35,9 +41,9 @@ The analysis pipeline performs the following steps:
 
 ---
 
-## Data Files
+## 2. Data Files
 
-### `analysis_results.json`
+### 2.1 `analysis_results.json`
 
 Per-frame analysis data containing:
 - **timestep**: Frame index in the trajectory
@@ -47,7 +53,7 @@ Per-frame analysis data containing:
 - **mean_distance_da**: Average donor-acceptor distance (Å)
 - **mean_angle_dha**: Average D-H-A angle (degrees)
 
-### `statistics_summary.json`
+### 2.2 `statistics_summary.json`
 
 Comprehensive statistical summary including:
 - Basic statistics (H-bond count, Betti numbers, geometry)
@@ -55,21 +61,21 @@ Comprehensive statistical summary including:
 - Persistent homology summary
 - Topological ML results (PCA explained variance)
 
-### `frame_embeddings.npy`
+### 2.3 `frame_embeddings.npy`
 
 NumPy array containing topological embeddings for each frame, generated using the Cell2Vec algorithm. Shape: `(n_frames, embedding_dim)`.
 
-### `tnn_features.npy`
+### 2.4 `tnn_features.npy`
 
 NumPy array containing Topological Neural Network (TNN) features extracted using the Simplicial Attention Network (SAN). These features capture higher-order structural information from the H-bond network.
 
 ---
 
-## Raw Data CSV Files
+## 3. Raw Data CSV Files
 
 The `raw_data_csv/` directory contains detailed numerical data in CSV format for further analysis or custom plotting.
 
-### Time Series Data
+### 3.1 Time Series Data
 
 | File | Description | Columns |
 |------|-------------|---------|
@@ -78,14 +84,14 @@ The `raw_data_csv/` directory contains detailed numerical data in CSV format for
 | `persistence_dynamics.csv` | Persistent homology statistics over time | `frame_idx`, `time_fs`, `time_ps`, `total_persistence_H0`, `total_persistence_H1`, `n_features_H0`, `n_features_H1`, `mean_lifetime_H0`, `mean_lifetime_H1` |
 | `property_autocorrelation.csv` | H-bond existence autocorrelation | `lag_time_fs`, `property_acf` |
 
-### Distribution Data
+### 3.2 Distribution Data
 
 | File | Description | Columns |
 |------|-------------|---------|
 | `coordination_raw_obs.csv` | Raw coordination number observations | `coordination_number` |
 | `degree_raw_obs.csv` | Raw node degree observations | `degree` |
 
-### Radial Distribution Functions
+### 3.3 Radial Distribution Functions
 
 | File | Description | Columns |
 |------|-------------|---------|
@@ -96,7 +102,7 @@ The `raw_data_csv/` directory contains detailed numerical data in CSV format for
 | `rdf_K_O.csv` | Potassium-Oxygen RDF | `r_angstrom`, `g_r` |
 | `rdf_P_O.csv` | Phosphorus-Oxygen RDF | `r_angstrom`, `g_r` |
 
-### Machine Learning Data
+### 3.4 Machine Learning Data
 
 | File | Description | Columns |
 |------|-------------|---------|
@@ -107,13 +113,13 @@ The `raw_data_csv/` directory contains detailed numerical data in CSV format for
 
 ---
 
-## Visualization Outputs
+## 4. Visualization Outputs
 
 All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 1. `hbond_dynamics.png`
+### 4.1 `hbond_dynamics.png`
 
 **Title**: Hydrogen Bond Network Dynamics
 
@@ -130,7 +136,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 2. `betti_dynamics.png`
+### 4.2 `betti_dynamics.png`
 
 **Title**: Topological Invariants Dynamics
 
@@ -153,7 +159,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 3. `hbond_distributions.png`
+### 4.3 `hbond_distributions.png`
 
 **Title**: Hydrogen Bond Geometry Distributions
 
@@ -180,7 +186,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 4. `coordination_degree.png`
+### 4.4 `coordination_degree.png`
 
 **Title**: Coordination Number and Degree Distribution
 
@@ -201,7 +207,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 5. `hbond_lifetime.png`
+### 4.5 `hbond_lifetime.png`
 
 **Title**: Hydrogen Bond Lifetime Distribution
 
@@ -219,7 +225,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 6. `autocorrelation.png`
+### 4.6 `autocorrelation.png`
 
 **Title**: H-bond Autocorrelation Function
 
@@ -238,7 +244,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 7. `rdf_*.png` Files
+### 4.7 `rdf_*.png` Files
 
 **Title**: Radial Distribution Functions
 
@@ -271,7 +277,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 8. `clustering_strength.png`
+### 4.8 `clustering_strength.png`
 
 **Title**: Network Clustering Coefficient and H-bond Strength Classification
 
@@ -290,7 +296,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 9. `persistence_barcode.png`
+### 4.9 `persistence_barcode.png`
 
 **Title**: Persistence Barcode
 
@@ -315,7 +321,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 10. `persistence_diagram.png`
+### 4.10 `persistence_diagram.png`
 
 **Title**: Persistence Diagram
 
@@ -339,7 +345,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 11. `persistence_dynamics.png`
+### 4.11 `persistence_dynamics.png`
 
 **Title**: Persistence Dynamics (All Frames)
 
@@ -367,7 +373,7 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 12. Topological Machine Learning Plots
+### 4.12 Topological Machine Learning Plots
 
 #### `similarity_heatmap.png`
 
@@ -426,16 +432,16 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-## Current Analysis Results Summary
+## 5. Current Analysis Results Summary
 
 This section provides key findings from the present CP2K AIMD trajectory analysis:
 
-### System Information
+### 5.1 System Information
 - **Frames analyzed**: 501
 - **Sampling**: Every frame from trajectory
 - **Timestep**: 0.5 fs
 
-### H-bond Network Statistics
+### 5.2 H-bond Network Statistics
 
 | Property | Mean | Std | Min | Max |
 |----------|------|-----|-----|-----|
@@ -444,7 +450,7 @@ This section provides key findings from the present CP2K AIMD trajectory analysi
 | H-bond lifetime | 121.0 fs | 95.3 fs | - | 250.5 fs |
 | Clustering coefficient | 0.018 | 0.036 | - | - |
 
-### Betti Numbers (Topological Invariants)
+### 5.3 Betti Numbers (Topological Invariants)
 
 | Invariant | Mean | Std | Physical Interpretation |
 |-----------|------|-----|------------------------|
@@ -452,14 +458,14 @@ This section provides key findings from the present CP2K AIMD trajectory analysi
 | β₁ | 0.7 | 0.4 | <1 loop on average (sparse ring structure) |
 | β₂ | 0.0 | 0.0 | No enclosed cavities (dense liquid) |
 
-### H-bond Geometry
+### 5.4 H-bond Geometry
 
 | Parameter | Mean | Std | Range |
 |-----------|------|-----|-------|
 | D-A distance | 2.90 Å | 0.23 Å | - |
 | D-H-A angle | 158.0° | 13.6° | - |
 
-### H-bond Strength Classification
+### 5.5 H-bond Strength Classification
 
 | Category | Criterion | Percentage |
 |----------|-----------|------------|
@@ -467,14 +473,14 @@ This section provides key findings from the present CP2K AIMD trajectory analysi
 | Moderate | 2.8 ≤ D-A < 3.2 Å | 46.5% |
 | Weak | D-A ≥ 3.2 Å | 13.4% |
 
-### Persistent Homology Summary
+### 5.6 Persistent Homology Summary
 
 | Metric | H0 (Components) | H1 (Loops) |
 |--------|-----------------|------------|
 | Total persistence (mean) | 445.6 Å | 44.5 Å |
 | Number of features (mean) | 162 | 78.9 |
 
-### Topological Machine Learning
+### 5.7 Topological Machine Learning
 
 | PCA Component | Explained Variance |
 |---------------|-------------------|
@@ -484,7 +490,7 @@ This section provides key findings from the present CP2K AIMD trajectory analysi
 
 ---
 
-## Physical Constants and Units
+## 6. Physical Constants and Units
 
 | Quantity | Unit | Conversion |
 |----------|------|------------|
@@ -495,7 +501,7 @@ This section provides key findings from the present CP2K AIMD trajectory analysi
 
 ---
 
-## H-bond Detection Criteria
+## 7. H-bond Detection Criteria
 
 The default geometric criteria for H-bond detection:
 - **Donor-Acceptor distance**: ≤ 3.5 Å
@@ -504,7 +510,7 @@ The default geometric criteria for H-bond detection:
 
 ---
 
-## References
+## 8. References
 
 1. **Betti Numbers**: Edelsbrunner, H., & Harer, J. (2010). *Computational Topology: An Introduction*.
 2. **Persistent Homology**: Carlsson, G. (2009). *Topology and Data*. Bulletin of the AMS.
@@ -513,6 +519,6 @@ The default geometric criteria for H-bond detection:
 
 ---
 
-## Log File
+## 9. Log File
 
 `topoHBNet_analysis_*.log` contains the complete analysis log with timing information, intermediate results, and any warnings encountered during the analysis.
