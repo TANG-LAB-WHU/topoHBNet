@@ -36,7 +36,7 @@ import json
 import argparse
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Set, Tuple, Optional
+from typing import List, Dict, Set, Tuple, Optional, Union
 from collections import defaultdict
 
 import numpy as np
@@ -1572,7 +1572,7 @@ def save_results(results: List[Dict], advanced_stats: Dict, output_dir: Path, ml
 
 
 def save_raw_data(results: List[Dict], advanced_stats: Dict, ml_results: Optional[Dict], 
-                 output_dir_raw: str, timestep_fs: float, sample_interval: int):
+                 output_dir_raw: Union[str, Path], timestep_fs: float, sample_interval: int):
     """Save raw data of analysis to CSV files."""
     try:
         import pandas as pd
@@ -1582,7 +1582,7 @@ def save_raw_data(results: List[Dict], advanced_stats: Dict, ml_results: Optiona
 
     out_path = Path(output_dir_raw)
     out_path.mkdir(parents=True, exist_ok=True)
-    print(f"\n[6.5] Saving raw data to CSV in {out_path}...")
+    print(f"\n[6.5] Saving raw data to CSV in {out_path.resolve()}...")
 
     # 1. H-bond Dynamics & Topology (Time Series)
     # Extract time series data
@@ -1901,8 +1901,11 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     save_results(results, advanced_stats, output_dir, ml_results if args.run_ml else None)
     
     if args.output_dir_rawdata:
+        raw_dir = Path(args.output_dir_rawdata)
+        if not raw_dir.is_absolute():
+            raw_dir = output_dir.parent / raw_dir
         save_raw_data(results, advanced_stats, ml_results if args.run_ml else None, 
-                     args.output_dir_rawdata, args.timestep, args.sample_interval)
+                     raw_dir, args.timestep, args.sample_interval)
     
     # Generate plots
     print("\n[7] Generating plots...")

@@ -1,7 +1,7 @@
 ======================================================================
 CP2K AIMD Hydrogen Bond Topology Analysis
 ======================================================================
-    Log file: C:\Users\SIQI\Documents\Github\topoHBNet\examples\cp2k_aimd\results\topoHBNet_analysis_20260201_224903.log
+    Log file: C:\Users\SIQI\Documents\Github\topoHBNet\examples\cp2k_aimd\results\topoHBNet_analysis_20260202_135645.log
 
 Configuration:
     Timestep: 0.5 fs
@@ -77,7 +77,7 @@ Configuration:
     Saved: tnn_features.npy
     Saved: statistics_summary.json
 
-[6.5] Saving raw data to CSV in raw_data_csv...
+[6.5] Saving raw data to CSV in C:\Users\SIQI\Documents\Github\topoHBNet\examples\cp2k_aimd\raw_data_csv...
     Saved: dynamics_topology.csv
     Saved: property_autocorrelation.csv
     Saved: clustering_coefficient.csv
