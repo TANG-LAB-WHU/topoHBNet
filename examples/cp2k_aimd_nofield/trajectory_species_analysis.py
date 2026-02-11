@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """
-cp2k_species_analysis.py
-
 Analyze reactive species (H₂O, H*, *OH, H₂O₂, O₂, etc.) from CP2K AIMD
 trajectory files (XYZ format).
 
