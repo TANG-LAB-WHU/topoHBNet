@@ -1,6 +1,6 @@
 # CP2K AIMD Hydrogen Bond Topology Analysis Results
 
-This directory contains the comprehensive analysis results from the `topoHBNet` package applied to a CP2K ab initio molecular dynamics (AIMD) trajectory. The analysis covers hydrogen bond (H-bond) detection, network topology, persistent homology, and topological machine learning.
+This directory contains the comprehensive analysis results from the `topoHBNet` package applied to a CP2K ab initio molecular dynamics (AIMD) trajectory. The analysis covers hydrogen bond (H-bond) detection, network topology, dynamics, structural properties (RDF), and persistent homology.
 
 ## Table of Contents
 
@@ -19,7 +19,6 @@ This directory contains the comprehensive analysis results from the `topoHBNet` 
    - 4.9 [Persistence Barcode](#49-persistence_barcodepng)
    - 4.10 [Persistence Diagram](#410-persistence_diagrampng)
    - 4.11 [Persistence Dynamics](#411-persistence_dynamicspng)
-   - 4.12 [Topological ML Visualizations](#412-topological-machine-learning-plots)
 5. [Current Analysis Results Summary](#5-current-analysis-results-summary)
 6. [Physical Constants and Units](#6-physical-constants-and-units)
 7. [H-bond Detection Criteria](#7-h-bond-detection-criteria)
@@ -37,7 +36,6 @@ The analysis pipeline performs the following steps:
 3. **Dynamical Analysis**: Tracks H-bond lifetime, autocorrelation, and network clustering
 4. **Structural Analysis**: Computes radial distribution functions (RDF) for various atomic pairs
 5. **Persistent Homology**: Applies topological data analysis (TDA) to characterize network structure
-6. **Topological Machine Learning**: Generates embeddings and extracts features using Cell2Vec and TNN
 
 ---
 
@@ -52,22 +50,6 @@ Per-frame analysis data containing:
 - **euler_char**: Euler characteristic of the H-bond network
 - **mean_distance_da**: Average donor-acceptor distance (Å)
 - **mean_angle_dha**: Average D-H-A angle (degrees)
-
-### 2.2 `statistics_summary.json`
-
-Comprehensive statistical summary including:
-- Basic statistics (H-bond count, Betti numbers, geometry)
-- Advanced statistics (coordination, degree, lifetime, clustering, H-bond strength)
-- Persistent homology summary
-- Topological ML results (PCA explained variance)
-
-### 2.3 `frame_embeddings.npy`
-
-NumPy array containing topological embeddings for each frame, generated using the Cell2Vec algorithm. Shape: `(n_frames, embedding_dim)`.
-
-### 2.4 `tnn_features.npy`
-
-NumPy array containing Topological Neural Network (TNN) features extracted using the Simplicial Attention Network (SAN). These features capture higher-order structural information from the H-bond network.
 
 ---
 
@@ -101,15 +83,6 @@ The `raw_data_csv/` directory contains detailed numerical data in CSV format for
 | `rdf_La_O.csv` | Lanthanum-Oxygen RDF | `r_angstrom`, `g_r` |
 | `rdf_K_O.csv` | Potassium-Oxygen RDF | `r_angstrom`, `g_r` |
 | `rdf_P_O.csv` | Phosphorus-Oxygen RDF | `r_angstrom`, `g_r` |
-
-### 3.4 Machine Learning Data
-
-| File | Description | Columns |
-|------|-------------|---------|
-| `ml_frame_embeddings.csv` | Cell2Vec embeddings per frame | `frame_idx`, `dim_0`, `dim_1`, ..., `dim_N` |
-| `ml_pca_components.csv` | PCA projections | `time_fs`, `time_ps`, `PC1`, `PC2` |
-| `ml_pca_variance.csv` | PCA explained variance | `component`, `explained_variance_ratio` |
-| `ml_similarity_matrix.csv` | Cosine similarity matrix | N×N matrix (no header) |
 
 ---
 
@@ -373,120 +346,54 @@ All figures are provided in both PNG (600 DPI) and SVG (vector) formats.
 
 ---
 
-### 4.12 Topological Machine Learning Plots
-
-#### `similarity_heatmap.png`
-
-**Title**: Inter-Frame Topological Similarity
-
-**Description**: Heatmap showing cosine similarity between frame embeddings.
-
-**Variables**:
-- **X and Y axes (Simulation time, ps)**: Time coordinates
-- **Color intensity**: Cosine similarity (0 to 1)
-- **Diagonal**: Always 1 (self-similarity)
-
-**Physical Meaning**:
-- **High similarity (bright)**: Similar H-bond network topology
-- **Low similarity (dark)**: Different network structures
-- **Block patterns**: Temporal regimes with consistent topology
-- **Gradual transitions**: Continuous structural evolution
-
----
-
-#### `embedding_pca.png`
-
-**Title**: PCA of Topological Embeddings
-
-**Description**: Principal Component Analysis projection of frame embeddings into 2D space.
-
-**Variables**:
-- **PC1, PC2**: First two principal components
-- **Explained variance (%)**: Fraction of total variance captured
-- **Color (Frame Index)**: Time progression through trajectory
-
-**Physical Meaning**:
-- **Clustering**: Frames with similar topology group together
-- **Trajectory in PC space**: Shows structural evolution
-- **PC1/PC2**: Dominant modes of topological variation
-- **Spread**: Diversity of H-bond network structures sampled
-
----
-
-#### `pca_time_series.png`
-
-**Title**: PCA Components Evolution
-
-**Description**: Time series of the first two principal components.
-
-**Variables**:
-- **X-axis (Simulation time, ps)**: Time in picoseconds
-- **Y-axis (PC value)**: Principal component projection value
-
-**Physical Meaning**:
-- **PC1 evolution**: Dominant structural changes over time
-- **PC2 evolution**: Secondary structural variations
-- **Oscillations**: Reversible structural fluctuations
-- **Trends**: Systematic structural drift (equilibration or transitions)
-- **Correlation between PCs**: Coupled vs. independent structural modes
-
----
-
 ## 5. Current Analysis Results Summary
 
 This section provides key findings from the present CP2K AIMD trajectory analysis:
 
 ### 5.1 System Information
-- **Frames analyzed**: 501
+- **Frames analyzed**: 1001
 - **Sampling**: Every frame from trajectory
 - **Timestep**: 0.5 fs
+- **ML Status**: Excluded (run without `--run-ml` flag)
 
 ### 5.2 H-bond Network Statistics
 
 | Property | Mean | Std | Min | Max |
 |----------|------|-----|-----|-----|
-| H-bonds per frame | 30.0 | 3.1 | 19 | 37 |
-| Coordination number | 1.68 | 0.75 | - | - |
-| H-bond lifetime | 121.0 fs | 95.3 fs | - | 250.5 fs |
-| Clustering coefficient | 0.018 | 0.036 | - | - |
+| H-bonds per frame | 52.6 | 3.6 | 44 | 61 |
+| Coordination number | 2.38 | 0.99 | - | - |
+| H-bond lifetime | 146.9 fs | 162.4 fs | - | 500.5 fs |
+| Clustering coefficient | 0.116 | 0.045 | - | - |
 
 ### 5.3 Betti Numbers (Topological Invariants)
 
 | Invariant | Mean | Std | Physical Interpretation |
 |-----------|------|-----|------------------------|
-| β₀ | 6.6 | 0.9 | ~6-7 disconnected H-bond clusters |
-| β₁ | 0.7 | 0.4 | <1 loop on average (sparse ring structure) |
+| β₀ | 2.4 | 1.1 | ~2-3 connected H-bond clusters |
+| β₁ | 7.2 | 2.3 | ~7 independent loops |
 | β₂ | 0.0 | 0.0 | No enclosed cavities (dense liquid) |
 
 ### 5.4 H-bond Geometry
 
 | Parameter | Mean | Std | Range |
 |-----------|------|-----|-------|
-| D-A distance | 2.90 Å | 0.23 Å | - |
-| D-H-A angle | 158.0° | 13.6° | - |
+| D-A distance | 2.90 Å | 0.19 Å | - |
+| D-H-A angle | 154.8° | 13.9° | - |
 
 ### 5.5 H-bond Strength Classification
 
 | Category | Criterion | Percentage |
 |----------|-----------|------------|
-| Strong | D-A < 2.8 Å | 40.1% |
-| Moderate | 2.8 ≤ D-A < 3.2 Å | 46.5% |
-| Weak | D-A ≥ 3.2 Å | 13.4% |
+| Strong | D-A < 2.8 Å | 32.5% |
+| Moderate | 2.8 ≤ D-A < 3.2 Å | 59.9% |
+| Weak | D-A ≥ 3.2 Å | 7.7% |
 
 ### 5.6 Persistent Homology Summary
 
 | Metric | H0 (Components) | H1 (Loops) |
 |--------|-----------------|------------|
-| Total persistence (mean) | 445.6 Å | 44.5 Å |
-| Number of features (mean) | 162 | 78.9 |
-
-### 5.7 Topological Machine Learning
-
-| PCA Component | Explained Variance |
-|---------------|-------------------|
-| PC1 | 17.0% |
-| PC2 | 14.0% |
-| **Total (PC1+PC2)** | **31.0%** |
+| Total persistence (mean) | 317.0 Å | 3.7 Å |
+| Number of features (mean) | 95.0 | 5.9 |
 
 ---
 
