@@ -203,8 +203,10 @@ def compute_coordination_numbers(results: List[Dict]) -> Dict:
     Coordination number = number of H-bonds per water molecule.
     """
     all_coordination = []
+    raw_records = []
     
     for r in results:
+        f_idx = r.get('timestep', 0)
         # Count how many H-bonds each oxygen participates in
         coord_count = defaultdict(int)
         for hb in r['hbonds']:
@@ -212,10 +214,16 @@ def compute_coordination_numbers(results: List[Dict]) -> Dict:
             coord_count[hb.acceptor_o_idx] += 1
         
         # Collect all coordination numbers
-        all_coordination.extend(list(coord_count.values()))
+        for atom_idx, count in coord_count.items():
+            all_coordination.append(count)
+            raw_records.append({
+                'frame_idx': f_idx,
+                'atom_idx': atom_idx,
+                'coordination_number': count
+            })
     
     if not all_coordination:
-        return {'mean': 0, 'std': 0, 'distribution': {}}
+        return {'mean': 0, 'std': 0, 'distribution': {}, 'raw_data': [], 'raw_records': []}
     
     # Distribution
     unique, counts = np.unique(all_coordination, return_counts=True)
@@ -225,7 +233,8 @@ def compute_coordination_numbers(results: List[Dict]) -> Dict:
         'mean': float(np.mean(all_coordination)),
         'std': float(np.std(all_coordination)),
         'distribution': distribution,
-        'raw_data': all_coordination
+        'raw_data': all_coordination,
+        'raw_records': raw_records
     }
 
 
@@ -235,16 +244,25 @@ def compute_degree_distribution(results: List[Dict]) -> Dict:
     Degree = number of connections per node (oxygen atom).
     """
     all_degrees = []
+    raw_records = []
     
     for r in results:
+        f_idx = r.get('timestep', 0)
         degree_count = defaultdict(int)
         for hb in r['hbonds']:
             degree_count[hb.donor_o_idx] += 1
             degree_count[hb.acceptor_o_idx] += 1
-        all_degrees.extend(list(degree_count.values()))
+        
+        for atom_idx, count in degree_count.items():
+            all_degrees.append(count)
+            raw_records.append({
+                'frame_idx': f_idx,
+                'atom_idx': atom_idx,
+                'degree': count
+            })
     
     if not all_degrees:
-        return {'mean': 0, 'std': 0, 'distribution': {}}
+        return {'mean': 0, 'std': 0, 'distribution': {}, 'raw_data': [], 'raw_records': []}
     
     unique, counts = np.unique(all_degrees, return_counts=True)
     distribution = {int(k): int(v) for k, v in zip(unique, counts)}
@@ -253,8 +271,10 @@ def compute_degree_distribution(results: List[Dict]) -> Dict:
         'mean': float(np.mean(all_degrees)),
         'std': float(np.std(all_degrees)),
         'distribution': distribution,
-        'raw_data': all_degrees
+        'raw_data': all_degrees,
+        'raw_records': raw_records
     }
+
 
 
 def compute_hbond_lifetime(results: List[Dict], timestep_fs: float) -> Dict:
@@ -1658,17 +1678,18 @@ def save_raw_data(results: List[Dict], advanced_stats: Dict, ml_results: Optiona
     # Based on plot code: coord_data['raw_data'] is used for histogram. 
     # advanced_stats['coordination'] has 'raw_data'? Yes.
     
-    if 'coordination' in advanced_stats and 'raw_data' in advanced_stats['coordination']:
-        # Save raw observations
-        df_coord_raw = pd.DataFrame({'coordination_number': advanced_stats['coordination']['raw_data']})
+    if 'coordination' in advanced_stats and 'raw_records' in advanced_stats['coordination']:
+        # Save raw observations with labels
+        df_coord_raw = pd.DataFrame(advanced_stats['coordination']['raw_records'])
         df_coord_raw.to_csv(out_path / "coordination_raw_obs.csv", index=False)
         print(f"    Saved: coordination_raw_obs.csv")
     
-    if 'degree' in advanced_stats and 'raw_data' in advanced_stats['degree']:
-        # Save raw observations
-        df_degree_raw = pd.DataFrame({'degree': advanced_stats['degree']['raw_data']})
+    if 'degree' in advanced_stats and 'raw_records' in advanced_stats['degree']:
+        # Save raw observations with labels
+        df_degree_raw = pd.DataFrame(advanced_stats['degree']['raw_records'])
         df_degree_raw.to_csv(out_path / "degree_raw_obs.csv", index=False)
         print(f"    Saved: degree_raw_obs.csv")
+
 
     # 6. ML Results
     if ml_results:
