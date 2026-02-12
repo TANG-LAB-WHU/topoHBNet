@@ -68,6 +68,7 @@ results_*/
 # OS
 .DS_Store
 Thumbs.db
+*.lmpdat
 
 # uv cache
 .uv/
