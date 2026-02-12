@@ -76,7 +76,7 @@ class HBondEmbedder:
             self._model = tex.Cell2Vec(
                 dimensions=self.dimensions,
                 walk_length=self.kwargs.get('walk_length', 10),
-                num_walks=self.kwargs.get('num_walks', 80),
+                walk_number=self.kwargs.get('num_walks', 80),
                 workers=self.kwargs.get('workers', 1)
             )
         elif self.method == 'hope':

@@ -108,7 +108,8 @@ pip install -e ".[all]"
 python run_analysis.py trajectory.lammpstrj --output results/
 
 # Analysis with Topological Machine Learning (TML)
-python example_analysis.py --trajectory trajectory.xyz --run-ml --ml-dim 16
+# From examples/cp2k_aimd/:
+python topoHBNet_main_analysis.py --trajectory trajectory.xyz --run-ml --ml-dim 16
 ```
 
 ### Python API
