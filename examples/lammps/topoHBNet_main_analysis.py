@@ -1827,18 +1827,20 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     # via --data-file (Masses section) or --type-map.
     print("\n[1] Parsing LAMMPS trajectory with ASE backend...")
     
-    # Resolve atom type → atomic number mapping
-    from ase.data import atomic_numbers as _ase_atomic_numbers
-    atom_type_map = None
+    # Resolve atom type → element symbol mapping (specorder for ASE)
+    specorder = None
     lammps_data = None
     
     if args.type_map:
         # Manual mapping: "1:O 2:H 3:Si 4:C"
-        atom_type_map = {}
+        type_dict = {}
         for pair in args.type_map.split():
             tid_str, sym = pair.split(':')
-            atom_type_map[int(tid_str)] = _ase_atomic_numbers[sym]
+            type_dict[int(tid_str)] = sym
+        max_t = max(type_dict.keys())
+        specorder = [type_dict.get(t, 'X') for t in range(1, max_t + 1)]
         print(f"    Using manual type map: {args.type_map}")
+        print(f"    specorder = {specorder}")
     elif args.data_file:
         data_path = Path(__file__).parent / args.data_file
         if data_path.exists():
@@ -1850,7 +1852,7 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     
     parser = TrajectoryParser(
         traj_file,
-        atom_type_to_atomic_number=atom_type_map,
+        specorder=specorder,
         lammps_data_file=lammps_data
     )
     frames = parser.parse()
@@ -1923,12 +1925,13 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     
     print("    Computing RDFs for multiple pairs...")
     rdfs = {}
-    rdf_pairs = [('O', 'O'), ('O', 'H'), ('H', 'H'), ('La', 'O'), ('K', 'O'), ('P', 'O')]
+    # Auto-generate RDF pairs from unique elements in this trajectory
+    # Always include O-O, O-H, H-H if present; then add all cross-pairs
+    from itertools import combinations_with_replacement
+    rdf_pairs = list(combinations_with_replacement(sorted(unique_elements), 2))
     for s1, s2 in rdf_pairs:
-        # Check if both elements exist in first frame
-        if s1 in unique_elements and s2 in unique_elements:
-            print(f"        RDF: {s1}-{s2}")
-            rdfs[f"{s1}-{s2}"] = compute_rdf(sampled_frames, s1, s2)
+        print(f"        RDF: {s1}-{s2}")
+        rdfs[f"{s1}-{s2}"] = compute_rdf(sampled_frames, s1, s2)
     advanced_stats['rdf'] = rdfs
     
     print("    Classifying H-bond strength...")

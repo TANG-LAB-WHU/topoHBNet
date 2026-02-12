@@ -145,10 +145,10 @@ class Frame:
         )
 
 
-def parse_lammps_data_masses(data_filepath: Union[str, Path]) -> Dict[int, int]:
+def parse_lammps_data_masses(data_filepath: Union[str, Path]) -> List[str]:
     """
-    Parse a LAMMPS data file (.data, .lmpdat) to extract atom type → atomic
-    number mapping from the Masses section.
+    Parse a LAMMPS data file (.data, .lmpdat) to extract the atom type → element
+    mapping from the Masses section, returned as a specorder list for ASE.
 
     The Masses section may have inline comments with element symbols, e.g.:
         1 12.0107  # C
@@ -164,16 +164,16 @@ def parse_lammps_data_masses(data_filepath: Union[str, Path]) -> Dict[int, int]:
 
     Returns
     -------
-    dict
-        Mapping from LAMMPS atom type (int) → atomic number (int).
-        E.g. {1: 6, 2: 1, 3: 8, 4: 14}
+    list of str
+        Ordered element symbols for ASE's ``specorder`` parameter.
+        E.g. ['C', 'H', 'O', 'Si'] means type 1=C, type 2=H, type 3=O, type 4=Si.
     """
     data_filepath = Path(data_filepath)
     if not data_filepath.exists():
         raise FileNotFoundError(f"LAMMPS data file not found: {data_filepath}")
 
     masses_section = False
-    type_to_atomic_num: Dict[int, int] = {}
+    type_to_symbol: Dict[int, str] = {}
 
     with open(data_filepath, 'r') as f:
         for line in f:
@@ -185,7 +185,7 @@ def parse_lammps_data_masses(data_filepath: Union[str, Path]) -> Dict[int, int]:
             # End of Masses section: blank line after data, or another section
             if masses_section:
                 if stripped == '':
-                    if type_to_atomic_num:
+                    if type_to_symbol:
                         break  # Finished reading masses
                     continue  # Skip blank line right after "Masses"
                 # Check for next section header (e.g., "Atoms", "Bonds")
@@ -204,18 +204,18 @@ def parse_lammps_data_masses(data_filepath: Union[str, Path]) -> Dict[int, int]:
                     continue
 
                 # Try to get element from inline comment first
-                atomic_num = None
+                symbol = None
                 if len(parts) > 1:
                     comment = parts[1].strip()
                     # Match element symbol (1 or 2 letters, first uppercase)
                     match = re.match(r'^([A-Z][a-z]?)\b', comment)
                     if match:
-                        symbol = match.group(1)
-                        if symbol in atomic_numbers:
-                            atomic_num = atomic_numbers[symbol]
+                        candidate = match.group(1)
+                        if candidate in atomic_numbers:
+                            symbol = candidate
 
                 # Fall back to mass matching
-                if atomic_num is None:
+                if symbol is None:
                     best_z = 1
                     best_diff = abs(atomic_masses_iupac2016[1] - mass)
                     for z in range(1, len(atomic_masses_iupac2016)):
@@ -226,23 +226,30 @@ def parse_lammps_data_masses(data_filepath: Union[str, Path]) -> Dict[int, int]:
                         if diff < best_diff:
                             best_diff = diff
                             best_z = z
-                    atomic_num = best_z
+                    symbol = chemical_symbols[best_z]
 
-                type_to_atomic_num[type_id] = atomic_num
+                type_to_symbol[type_id] = symbol
 
-    if not type_to_atomic_num:
+    if not type_to_symbol:
         raise ValueError(
             f"No Masses section found in {data_filepath}. "
             "Use --type-map to specify the mapping manually."
         )
 
+    # Build ordered specorder list: type 1 → index 0, type 2 → index 1, ...
+    max_type = max(type_to_symbol.keys())
+    specorder = []
+    for tid in range(1, max_type + 1):
+        sym = type_to_symbol.get(tid, 'X')
+        specorder.append(sym)
+
     # Print resolved mapping for user verification
     print(f"    Atom type mapping from {data_filepath.name}:")
-    for tid in sorted(type_to_atomic_num):
-        z = type_to_atomic_num[tid]
-        print(f"      Type {tid} → {chemical_symbols[z]} (Z={z})")
+    for tid in range(1, max_type + 1):
+        sym = type_to_symbol.get(tid, 'X')
+        print(f"      Type {tid} \u2192 {sym}")
 
-    return type_to_atomic_num
+    return specorder
 
 
 class TrajectoryParser:
@@ -290,7 +297,8 @@ class TrajectoryParser:
         element_to_type: Optional[Dict[str, int]] = None,
         cell_filepath: Optional[Union[str, Path]] = None,
         atom_type_to_atomic_number: Optional[Dict[int, int]] = None,
-        lammps_data_file: Optional[Union[str, Path]] = None
+        lammps_data_file: Optional[Union[str, Path]] = None,
+        specorder: Optional[List[str]] = None
     ):
         """
         Initialize the TrajectoryParser.
@@ -308,14 +316,15 @@ class TrajectoryParser:
         cell_filepath : str or Path, optional
             Path to separate CP2K cell file (.cell) containing box information.
         atom_type_to_atomic_number : dict, optional
-            Mapping from LAMMPS numeric atom types to atomic numbers.
-            E.g. {1: 6, 2: 1, 3: 8, 4: 14} for C, H, O, Si.
-            Passed directly to ASE's read() for lammps-dump-text files.
-            If not provided and lammps_data_file is given, the mapping
-            will be inferred from the Masses section of the data file.
+            DEPRECATED. Use specorder or lammps_data_file instead.
+            If provided, will be converted to specorder automatically.
         lammps_data_file : str or Path, optional
             Path to LAMMPS data file (.data, .lmpdat) to auto-extract
             the atom type→element mapping from the Masses section.
+        specorder : list of str, optional
+            Ordered element symbols for LAMMPS atom types.
+            E.g. ['C', 'H', 'O', 'Si'] means type 1=C, 2=H, 3=O, 4=Si.
+            This is passed directly to ASE's LAMMPS dump reader.
         """
         self.filepath = Path(filepath)
         self.format = format
@@ -327,15 +336,21 @@ class TrajectoryParser:
         self.element_to_type = element_to_type or DEFAULT_ELEMENT_TO_TYPE
         self.cell_filepath = Path(cell_filepath) if cell_filepath else None
         
-        # Resolve atom type mapping for LAMMPS dump files
-        if atom_type_to_atomic_number is not None:
-            self.atom_type_to_atomic_number = atom_type_to_atomic_number
+        # Resolve specorder for LAMMPS dump files
+        # Priority: specorder > lammps_data_file > atom_type_to_atomic_number
+        if specorder is not None:
+            self.specorder = specorder
         elif lammps_data_file is not None:
-            self.atom_type_to_atomic_number = parse_lammps_data_masses(
-                Path(lammps_data_file)
-            )
+            self.specorder = parse_lammps_data_masses(Path(lammps_data_file))
+        elif atom_type_to_atomic_number is not None:
+            # Convert deprecated dict format to specorder list
+            max_type = max(atom_type_to_atomic_number.keys())
+            self.specorder = [
+                chemical_symbols[atom_type_to_atomic_number.get(t, 0)]
+                for t in range(1, max_type + 1)
+            ]
         else:
-            self.atom_type_to_atomic_number = None
+            self.specorder = None
         
         self._frames: List[Frame] = []
         self._parsed = False
@@ -386,8 +401,8 @@ class TrajectoryParser:
         
         # Read all frames using ASE
         read_kwargs = {}
-        if self.atom_type_to_atomic_number and self.format == 'lammps-dump-text':
-            read_kwargs['atom_type_to_atomic_number'] = self.atom_type_to_atomic_number
+        if self.specorder and self.format == 'lammps-dump-text':
+            read_kwargs['specorder'] = self.specorder
         atoms_list = read(
             str(self.filepath), index=':', format=self.format, **read_kwargs
         )
@@ -428,8 +443,8 @@ class TrajectoryParser:
         """Generator that yields frames one at a time (memory efficient)."""
         cell_data = self._parse_cp2k_cell_file()
         read_kwargs = {}
-        if self.atom_type_to_atomic_number and self.format == 'lammps-dump-text':
-            read_kwargs['atom_type_to_atomic_number'] = self.atom_type_to_atomic_number
+        if self.specorder and self.format == 'lammps-dump-text':
+            read_kwargs['specorder'] = self.specorder
         for i, atoms in enumerate(iread(str(self.filepath), format=self.format, **read_kwargs)):
             timestep = atoms.info.get('timestep', atoms.info.get('time', i))
             frame = Frame.from_ase_atoms(atoms, timestep, self.element_to_type)
