@@ -1,6 +1,4 @@
 """
-Hydrogen Bond Network Embedder
-
 Generates low-dimensional embeddings of H-bond networks
 using TopoEmbedX algorithms like Cell2Vec and HOPE.
 """

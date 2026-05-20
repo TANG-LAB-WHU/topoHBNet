@@ -1,6 +1,4 @@
 """
-Simplicial Complex Builder for Hydrogen Bond Networks
-
 Constructs TopoNetX simplicial complexes from hydrogen bond networks.
 """
 

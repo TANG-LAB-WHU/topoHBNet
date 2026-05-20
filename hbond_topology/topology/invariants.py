@@ -1,6 +1,4 @@
 """
-Topological Invariants Calculator
-
 Computes various topological invariants from simplicial complexes,
 including Betti numbers, Hodge Laplacians, and adjacency matrices.
 """

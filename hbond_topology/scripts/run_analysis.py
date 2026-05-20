@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """
-run_analysis.py
-
 Main script for analyzing hydrogen bond network topology from LAMMPS trajectory.
 
 Usage:

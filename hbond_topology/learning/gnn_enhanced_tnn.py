@@ -1,6 +1,4 @@
 """
-GNN-Enhanced Topological Neural Network (Experimental)
-
 This module implements a hybrid architecture that combines
 Graph Neural Networks (GNN) with Topological Neural Networks (TNN)
 for hydrogen bond network analysis.

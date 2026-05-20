@@ -1,6 +1,4 @@
 """
-Visualization Module
-
 Provides visualization tools for hydrogen bond network topology analysis.
 """
 

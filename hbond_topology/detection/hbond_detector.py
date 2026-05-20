@@ -1,6 +1,4 @@
 """
-Hydrogen Bond Detector
-
 Detects hydrogen bonds in molecular dynamics frames using geometric criteria.
 Supports periodic boundary conditions for proper distance calculations.
 """

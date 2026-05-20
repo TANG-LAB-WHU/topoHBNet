@@ -1,6 +1,4 @@
 """
-Persistent Homology Module
-
 Provides persistent homology analysis for hydrogen bond networks
 using the gudhi library.
 """

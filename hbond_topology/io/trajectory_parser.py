@@ -1,6 +1,4 @@
 """
-Unified Trajectory Parser
-
 Parses molecular dynamics trajectory files from various sources
 (LAMMPS, CP2K, XYZ, VASP, etc.) using ASE as the unified backend.
 """
