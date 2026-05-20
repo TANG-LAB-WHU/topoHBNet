@@ -1,6 +1,4 @@
 """
-Hydrogen Bond Network Topology Analysis Package
-
 This package provides tools for analyzing hydrogen bond network topology
 from LAMMPS molecular dynamics trajectories using TopoNetX, TopoModelX,
 and TopoEmbedX libraries.
@@ -16,6 +14,7 @@ from .topology.complex_builder import HBondComplexBuilder
 from .topology.invariants import TopologicalInvariants
 from .analysis.dynamics import DynamicsAnalyzer
 from .analysis.visualization import TopologyVisualizer
+from .analysis.interfacial import InterfacialAnalyzer, InterfacialVisualizer, InterfacialAnalysisResult
 
 __all__ = [
     "TrajectoryParser",
@@ -24,6 +23,9 @@ __all__ = [
     "TopologicalInvariants",
     "DynamicsAnalyzer",
     "TopologyVisualizer",
+    "InterfacialAnalyzer",
+    "InterfacialVisualizer",
+    "InterfacialAnalysisResult",
 ]
 
 # Optional: Embedding module (requires topoembedx)
