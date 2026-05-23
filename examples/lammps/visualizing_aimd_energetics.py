@@ -24,13 +24,19 @@ from matplotlib.colors import LinearSegmentedColormap
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Visualize AIMD energetics from CP2K trajectory.ener"
+        description="Visualize AIMD energetics from LAMMPS log.lammps"
     )
     parser.add_argument(
         "--input", "-i",
         type=str,
-        default="trajectory.ener",
-        help="Path to trajectory.ener file (default: trajectory.ener)"
+        default="log.lammps",
+        help="Path to LAMMPS log file (default: log.lammps)"
+    )
+    parser.add_argument(
+        "--timestep",
+        type=float,
+        default=0.5,
+        help="Simulation timestep in fs (used if Time column is missing) (default: 0.5 fs)"
     )
     parser.add_argument(
         "--output", "-o",
@@ -63,22 +69,53 @@ def parse_args():
 # Data loading
 # ---------------------------------------------------------------------------
 
-def load_ener(filepath: str) -> dict:
-    """Load CP2K .ener file and return a dict of numpy arrays."""
+def load_ener(filepath: str, timestep: float = 0.5) -> dict:
+    """Load LAMMPS log file and return a dict of numpy arrays."""
     steps, times, kin, temp, pot, cons_qty = [], [], [], [], [], []
 
+    in_thermo = False
+    col_idx = {}
+    
     with open(filepath, "r") as f:
         for line in f:
             line = line.strip()
-            if not line or line.startswith("#"):
+            if not line:
                 continue
-            parts = line.split()
-            steps.append(int(parts[0]))
-            times.append(float(parts[1]))
-            kin.append(float(parts[2]))
-            temp.append(float(parts[3]))
-            pot.append(float(parts[4]))
-            cons_qty.append(float(parts[5]))
+                
+            if line.startswith("Step "):
+                in_thermo = True
+                parts = line.split()
+                col_idx = {k: i for i, k in enumerate(parts)}
+                continue
+                
+            if line.startswith("Loop time of") or line.startswith("ERROR"):
+                in_thermo = False
+                continue
+                
+            if in_thermo:
+                try:
+                    parts = line.split()
+                    step_val = int(parts[col_idx.get("Step", 0)])
+                    
+                    # LAMMPS doesn't always print Time, estimate if missing
+                    if "Time" in col_idx:
+                        time_val = float(parts[col_idx["Time"]])
+                    else:
+                        time_val = step_val * timestep
+                        
+                    temp_val = float(parts[col_idx.get("Temp", 0)]) if "Temp" in col_idx else 0.0
+                    pot_val = float(parts[col_idx.get("PotEng", 0)]) if "PotEng" in col_idx else 0.0
+                    tot_val = float(parts[col_idx.get("TotEng", 0)]) if "TotEng" in col_idx else 0.0
+                    kin_val = float(parts[col_idx.get("KinEng", 0)]) if "KinEng" in col_idx else (tot_val - pot_val)
+                    
+                    steps.append(step_val)
+                    times.append(time_val)
+                    temp.append(temp_val)
+                    pot.append(pot_val)
+                    cons_qty.append(tot_val)
+                    kin.append(kin_val)
+                except (ValueError, IndexError, KeyError):
+                    pass # Ignore lines that fail to parse
 
     return {
         "step": np.array(steps),
@@ -356,7 +393,7 @@ def main():
     print()
 
     # Load data
-    data = load_ener(input_path)
+    data = load_ener(input_path, timestep=args.timestep)
     print(f"Loaded {len(data['step'])} frames  |  "
           f"Time range: {data['time_fs'][0]:.1f} – {data['time_fs'][-1]:.1f} fs")
     print()
