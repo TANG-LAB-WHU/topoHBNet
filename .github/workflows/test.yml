@@ -29,7 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --system torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --system torch==2.5.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
           TORCH_VERSION=$(python -c "import torch; print(torch.__version__.split('+')[0])")
           uv pip install --system torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-${TORCH_VERSION}+cpu.html
           uv pip install --system -e ".[full]"
