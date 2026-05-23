@@ -760,6 +760,58 @@ class InterfacialVisualizer:
 
         print(f"All figures saved to {save_dir}/")
 
+        # Save raw data to CSV files
+        self.save_csvs(result, save_dir, timestep_fs)
+
+    def save_csvs(
+        self,
+        result: InterfacialAnalysisResult,
+        save_dir: Union[str, Path],
+        timestep_fs: float = 0.5,
+    ) -> None:
+        """Save the raw data of each plot as separate CSV files in *save_dir*."""
+        save_dir = Path(save_dir)
+        save_dir.mkdir(parents=True, exist_ok=True)
+        import csv
+
+        # 1. density_profile.csv
+        density_path = save_dir / "density_profile.csv"
+        with open(density_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Delta_Z_A", "Density_Substrate_atoms_per_A3", "Density_O_atoms_per_A3", "Density_H_atoms_per_A3"])
+            for z, sub, o, h in zip(result.z_bins, result.density_substrate, result.density_O, result.density_H):
+                writer.writerow([z, sub, o, h])
+
+        # 2. angle_distributions.csv
+        angle_path = save_dir / "angle_distributions.csv"
+        with open(angle_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Angle_deg", "Phi_probability_density", "Theta_probability_density"])
+            for phi_val, phi_prob, theta_prob in zip(result.phi_bins, result.phi_distribution, result.theta_distribution):
+                writer.writerow([phi_val, phi_prob, theta_prob])
+
+        # 3. hbond_evolution.csv
+        hbond_path = save_dir / "hbond_evolution.csv"
+        n_frames_hb = len(result.hbonds_per_molecule)
+        time_ps_hb = np.arange(n_frames_hb) * timestep_fs / 1000.0
+        with open(hbond_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Time_ps", "HBonds_per_interfacial_water", "N_interfacial_water"])
+            for t, hb, n_w in zip(time_ps_hb, result.hbonds_per_molecule, result.n_interfacial_water):
+                writer.writerow([t, hb, n_w])
+
+        # 4. surface_fluctuation.csv
+        fluct_path = save_dir / "surface_fluctuation.csv"
+        n_frames_fl = len(result.z_surf_timeseries)
+        time_ps_fl = np.arange(n_frames_fl) * timestep_fs / 1000.0
+        with open(fluct_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Time_ps", "Z_surface_A"])
+            for t, z in zip(time_ps_fl, result.z_surf_timeseries):
+                writer.writerow([t, z])
+
+        print(f"All raw data CSVs saved to {save_dir}/")
+
     def plot_density_profile(
         self, result: InterfacialAnalysisResult, filepath: Union[str, Path]
     ) -> None:

@@ -2,6 +2,9 @@
 
 This directory contains a complete workflow for analyzing an ab initio molecular dynamics (AIMD) trajectory of water on a substrate (e.g., Si/C surface) using the `topoHBNet` package.
 
+> [!NOTE]
+> These four analysis workflows are completely independent. They can be executed in any order (or even concurrently in parallel), as each script only processes the raw output files from the CP2K MD simulation (`trajectory.xyz`, `trajectory.cell`, and `trajectory.ener`) and does not depend on the outputs of the other scripts.
+
 The example demonstrates four complementary analysis workflows:
 
 1. **Hydrogen Bond Network Topology** (`topoHBNet_main_analysis.py`)
@@ -22,11 +25,18 @@ This is the central analysis script utilizing the core `topoHBNet` library. It m
   - **Topological Invariants**: Betti numbers ($\beta_0, \beta_1, \beta_2$) and Euler characteristic.
   - **Persistent Homology (TDA)**: Barcodes and persistence diagrams to identify stable vs. transient H-bond loops.
   - **Topological Machine Learning**: TNN feature extraction, topological embeddings, and PCA visualization (enabled with `--run-ml`).
-- **Primary Output**: `topoHBNet-no_run-ml/` (contains JSON results and visualizations).
+- **Primary Outputs**:
+  - `topoHBNet-no_run-ml/` (contains topological analysis results without machine learning)
+  - `topoHBNet-run-ml/` (contains topological analysis results with machine learning enabled)
 - **Usage**:
-  ```bash
-  python topoHBNet_main_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --run-ml
-  ```
+  - **To generate topological analysis results without machine learning (`topoHBNet-no_run-ml/`):**
+    ```bash
+    python topoHBNet_main_analysis.py --trajectory trajectory.xyz --cell-file trajectory.cell --output-dir topoHBNet-no_run-ml
+    ```
+  - **To generate topological analysis results with machine learning enabled (`topoHBNet-run-ml/`):**
+    ```bash
+    python topoHBNet_main_analysis.py --trajectory trajectory.xyz --cell-file trajectory.cell --run-ml --output-dir topoHBNet-run-ml
+    ```
 
 ## 2. Reactive Species Analysis
 
@@ -41,9 +51,10 @@ Focuses on detecting chemical transformations and identifying molecular fragment
   - **Stoichiometric Classification**: Categorizes H/O fragments into species like H₂O, H*, *OH, H₂O₂, H₃O⁺, etc.
 - **Primary Output**: `trajectory_species_results/` (contains population counts and evolution plots).
 - **Usage**:
-  ```bash
-  python trajectory_species_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --plot
-  ```
+  - **To generate species analysis results (`trajectory_species_results/`):**
+    ```bash
+    python trajectory_species_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --output-dir trajectory_species_results
+    ```
 
 ## 3. Simulation Energetics Visualization
 
@@ -57,9 +68,10 @@ A utility script to verify simulation stability by parsing the energetics output
   - Exports raw energetics data to CSV for further statistical analysis.
 - **Primary Output**: `visualization_aimd_energetics/` (contains stability plots and raw data).
 - **Usage**:
-  ```bash
-  python visualizing_aimd_energetics.py --input trajectory.ener --target-temp 298.0
-  ```
+  - **To generate energetics visualization results (`visualization_aimd_energetics/`):**
+    ```bash
+    python visualizing_aimd_energetics.py --input trajectory.ener --target-temp 298.0 --output visualization_aimd_energetics
+    ```
 
 ## 4. Interfacial Water & Surface Analysis
 
@@ -75,9 +87,10 @@ Implements Steps 63–65 of the *Nature Protocols* paper to characterize water b
   - **H-Bond Networks at the Interface (Step 65)**: Computes the evolution of H-bond counts per interfacial water compared to bulk reference values.
 - **Primary Output**: `interfacial_analysis_results/` (contains JSON dataset and high-quality plots of density profiles, angular distributions, and H-bond evolution).
 - **Usage**:
-  ```bash
-  python interfacial_water_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --mode dynamic
-  ```
+  - **To generate interfacial water analysis results (`interfacial_analysis_results/`):**
+    ```bash
+    python interfacial_water_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --mode dynamic --output-dir interfacial_analysis_results
+    ```
 
 ---
 

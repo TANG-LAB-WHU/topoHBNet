@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hbond-topology"
-version = "0.1.0"
+version = "0.2.0"
 description = "Hydrogen Bond Network Topology Analysis using TopoX Suite"
 readme = "README.md"
 license = "MIT"
@@ -97,9 +97,9 @@ full = [
 hbond-analyze = "hbond_topology.scripts.run_analysis:main"
 
 [project.urls]
-Homepage = "https://github.com/ResearchGeekSQ/topoHBNet"
-Documentation = "https://github.com/ResearchGeekSQ/topoHBNet#readme"
-Repository = "https://github.com/ResearchGeekSQ/topoHBNet"
+Homepage = "https://github.com/TANG-LAB-WHU/topoHBNet"
+Documentation = "https://github.com/TANG-LAB-WHU/topoHBNet#readme"
+Repository = "https://github.com/TANG-LAB-WHU/topoHBNet"
 
 [tool.hatch.metadata]
 allow-direct-references = true

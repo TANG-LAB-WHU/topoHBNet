@@ -1924,7 +1924,7 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     if args.output_dir_rawdata:
         raw_dir = Path(args.output_dir_rawdata)
         if not raw_dir.is_absolute():
-            raw_dir = output_dir.parent / raw_dir
+            raw_dir = output_dir / raw_dir
         save_raw_data(results, advanced_stats, ml_results if args.run_ml else None, 
                      raw_dir, args.timestep, args.sample_interval)
     

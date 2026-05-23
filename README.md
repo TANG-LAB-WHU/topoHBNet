@@ -1,6 +1,6 @@
 # Hydrogen Bond Network Topology Analysis
 
-[![Test](https://github.com/ResearchGeekSQ/topoHBNet/actions/workflows/test.yml/badge.svg)](https://github.com/ResearchGeekSQ/topoHBNet/actions/workflows/test.yml)
+[![Test](https://github.com/TANG-LAB-WHU/topoHBNet/actions/workflows/test.yml/badge.svg)](https://github.com/TANG-LAB-WHU/topoHBNet/actions/workflows/test.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -83,7 +83,7 @@ pip install torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-2.8.0+c
 First, clone the repository from GitHub:
 
 ```bash
-git clone https://github.com/ResearchGeekSQ/topoHBNet.git
+git clone https://github.com/TANG-LAB-WHU/topoHBNet.git
 cd topoHBNet
 ```
 

@@ -4,7 +4,7 @@ from LAMMPS molecular dynamics trajectories using TopoNetX, TopoModelX,
 and TopoEmbedX libraries.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "SIQI TANG"
 
 # Core modules (always available)
