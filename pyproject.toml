@@ -51,7 +51,7 @@ dependencies = [
 embedding = [
     "pygsp @ git+https://github.com/epfl-lts2/pygsp@643b1c448559da8c7dbaed7537a9fd819183c569",
     "karateclub @ git+https://github.com/benedekrozemberczki/karateclub@cb46a91df8dcbeb2570debcf6a9d0c518107a2de",
-    "topoembedx>=0.0.1",
+    "topoembedx>=0.0.1; python_version >= '3.12'",
 ]
 
 # Deep learning features (TopoModelX)
