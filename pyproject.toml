@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Hydrogen Bond Network Topology Analysis using TopoX Suite"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [
     { name = "SIQI TANG" }
 ]
@@ -25,8 +25,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Physics",
@@ -51,7 +49,7 @@ dependencies = [
 embedding = [
     "pygsp @ git+https://github.com/epfl-lts2/pygsp@643b1c448559da8c7dbaed7537a9fd819183c569",
     "karateclub @ git+https://github.com/benedekrozemberczki/karateclub@cb46a91df8dcbeb2570debcf6a9d0c518107a2de",
-    "topoembedx>=0.0.1; python_version >= '3.12'",
+    "topoembedx>=0.0.1",
 ]
 
 # Deep learning features (TopoModelX)
