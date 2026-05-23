@@ -1,7 +1,7 @@
 # Hydrogen Bond Network Topology Analysis
 
-[![Test](https://github.com/ResearchGeekSQ/topoHBNet/actions/workflows/test.yml/badge.svg)](https://github.com/ResearchGeekSQ/topoHBNet/actions/workflows/test.yml)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Test](https://github.com/TANG-LAB-WHU/topoHBNet/actions/workflows/test.yml/badge.svg)](https://github.com/TANG-LAB-WHU/topoHBNet/actions/workflows/test.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Analyze hydrogen bond (H-bond) network topology from molecular dynamics trajectories (LAMMPS, CP2K) using **Topological Data Analysis (TDA)** and the **TopoX Suite** (TopoNetX, TopoModelX, TopoEmbedX). Supports Betti number analysis, persistent homology, and Topological Machine Learning (TML).
@@ -48,7 +48,7 @@ flowchart TD
 
 ```bash
 # Create a new environment
-conda create -n topoHBNet python=3.10 -y
+conda create -n topoHBNet python=3.12 -y
 
 # Activate the environment
 conda activate topoHBNet
@@ -83,7 +83,7 @@ pip install torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-2.8.0+c
 First, clone the repository from GitHub:
 
 ```bash
-git clone https://github.com/ResearchGeekSQ/topoHBNet.git
+git clone https://github.com/TANG-LAB-WHU/topoHBNet.git
 cd topoHBNet
 ```
 

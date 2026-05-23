@@ -3,16 +3,16 @@ name: Test
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.12"]
       fail-fast: false
 
     steps:
@@ -29,7 +29,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv pip install --system torch --index-url https://download.pytorch.org/whl/cpu
+          uv pip install --system torch==2.5.1 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+          TORCH_VERSION=$(python -c "import torch; print(torch.__version__.split('+')[0])")
+          uv pip install --system torch-scatter torch-sparse -f https://data.pyg.org/whl/torch-${TORCH_VERSION}+cpu.html
           uv pip install --system -e ".[full]"
 
       - name: Run tests
@@ -46,7 +48,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
       - name: Install ruff
         run: pip install ruff

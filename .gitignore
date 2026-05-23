@@ -47,12 +47,16 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 
-# Analysis outputs (optional: keep if you want to track results)
+# Analysis outputs
+results/
 results_*/
-#results*
-#*.png
-#*.jpg
-#*.json
+# topoHBNet-run-ml/
+# topoHBNet-no_run-ml/
+# interfacial_analysis_results/
+# trajectory_species_results/
+# visualization_aimd_energetics/
+# raw_data_csv/
+*.log
 !pyproject.json
 
 # Large data files

@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "hbond-topology"
-version = "0.1.0"
+version = "0.2.0"
 description = "Hydrogen Bond Network Topology Analysis using TopoX Suite"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [
     { name = "SIQI TANG" }
 ]
@@ -25,8 +25,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Chemistry",
     "Topic :: Scientific/Engineering :: Physics",
@@ -34,8 +32,8 @@ classifiers = [
 
 dependencies = [
     # Core dependencies
-    "numpy>=1.20.0",
-    "scipy>=1.7.0",
+    "numpy>=1.26.0",
+    "scipy>=1.11.3",
     "networkx>=2.6.0",
     "matplotlib>=3.4.0",
     
@@ -97,9 +95,9 @@ full = [
 hbond-analyze = "hbond_topology.scripts.run_analysis:main"
 
 [project.urls]
-Homepage = "https://github.com/ResearchGeekSQ/topoHBNet"
-Documentation = "https://github.com/ResearchGeekSQ/topoHBNet#readme"
-Repository = "https://github.com/ResearchGeekSQ/topoHBNet"
+Homepage = "https://github.com/TANG-LAB-WHU/topoHBNet"
+Documentation = "https://github.com/TANG-LAB-WHU/topoHBNet#readme"
+Repository = "https://github.com/TANG-LAB-WHU/topoHBNet"
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -116,11 +114,11 @@ include = [
 
 [tool.black]
 line-length = 88
-target-version = ["py310", "py311", "py312"]
+target-version = ["py312"]
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
@@ -133,7 +131,7 @@ select = [
 ]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true

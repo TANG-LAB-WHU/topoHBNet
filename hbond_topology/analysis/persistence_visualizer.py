@@ -1,6 +1,4 @@
 """
-Persistence Visualization Module
-
 This module provides functions for visualizing persistent homology results,
 including persistence barcodes and persistence diagrams.
 """

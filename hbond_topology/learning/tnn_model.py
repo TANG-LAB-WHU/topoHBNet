@@ -1,6 +1,4 @@
 """
-Topological Neural Network Model
-
 Implements topological deep learning models for hydrogen bond networks
 using TopoModelX (Simplicial Attention Network).
 """

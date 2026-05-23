@@ -1,6 +1,4 @@
 """
-Dynamics Analyzer
-
 Analyzes time evolution of hydrogen bond network topology.
 """
 

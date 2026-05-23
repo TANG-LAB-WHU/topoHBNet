@@ -298,90 +298,11 @@ def analyze_frame(
     return dict(species_count)
 
 
-def parse_cp2k_xyz_time(comment_line: str) -> tuple[Optional[int], Optional[float]]:
-    """Parse CP2K XYZ comment line for step index and time.
-
-    Expected format: " i =        0, time =        0.000, E = ..."
-
-    Parameters
-    ----------
-    comment_line : str
-
-    Returns
-    -------
-    step : int or None
-    time_fs : float or None
-    """
-    step = None
-    time_fs = None
-    try:
-        parts = comment_line.split(",")
-        for part in parts:
-            part = part.strip()
-            if part.startswith("i =") or part.startswith("i="):
-                step = int(part.split("=")[1].strip())
-            elif part.startswith("time =") or part.startswith("time="):
-                time_fs = float(part.split("=")[1].strip())
-    except (ValueError, IndexError):
-        pass
-    return step, time_fs
-
-
-def parse_cp2k_cell_file(cell_path: str, verbose: bool = True) -> list[float]:
-    """Read cell dimensions from a CP2K trajectory.cell file.
-
-    Parses the first data line to extract diagonal cell vectors (Ax, By, Cz)
-    for an orthorhombic box.
-
-    Expected header:
-      #   Step   Time [fs]  Ax  Ay  Az  Bx  By  Bz  Cx  Cy  Cz  Volume
-
-    Parameters
-    ----------
-    cell_path : str
-        Path to CP2K .cell file.
-    verbose : bool
-        Print parsed cell info.
-
-    Returns
-    -------
-    cell : list of float
-        [Lx, Ly, Lz] in Angstrom.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the cell file does not exist.
-    ValueError
-        If the file cannot be parsed.
-    """
-    with open(cell_path, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            # First data line: Step Time Ax Ay Az Bx By Bz Cx Cy Cz Volume
-            cols = line.split()
-            if len(cols) < 12:
-                raise ValueError(
-                    f"Expected >=12 columns in cell file, got {len(cols)}: {line}"
-                )
-            # Ax=cols[2], By=cols[6], Cz=cols[10]
-            Ax = float(cols[2])
-            By = float(cols[6])
-            Cz = float(cols[10])
-
-            if verbose:
-                print(f"  Cell from {cell_path}: Ax={Ax:.4f}, By={By:.4f}, Cz={Cz:.4f} Å")
-
-            return [Ax, By, Cz]
-
-    raise ValueError(f"No data lines found in cell file: {cell_path}")
-
 
 def run_analysis(
-    xyz_path: str,
-    cell: Optional[list[float]] = None,
+    trajectory_path: str,
+    data_file_path: str,
+    type_map: Optional[dict[int, str]] = None,
     r_oh: float = 1.2,
     r_oo: float = 1.6,
     r_hh: float = 0.9,
@@ -390,14 +311,16 @@ def run_analysis(
     ho_only: bool = True,
     verbose: bool = True,
 ) -> pd.DataFrame:
-    """Run species analysis on a CP2K XYZ trajectory.
+    """Run species analysis on a LAMMPS trajectory.
 
     Parameters
     ----------
-    xyz_path : str
-        Path to XYZ trajectory file.
-    cell : list of float, optional
-        Box dimensions [Lx, Ly, Lz]. If None, no PBC applied.
+    trajectory_path : str
+        Path to LAMMPS trajectory file.
+    data_file_path : str
+        Path to LAMMPS data file.
+    type_map : dict, optional
+        Mapping of numeric type to element symbol (e.g., {1: 'O', 2: 'H'}).
     r_oh : float
         O-H bond distance threshold (Å).
     r_oo : float
@@ -407,7 +330,7 @@ def run_analysis(
     stride : int
         Analyze every N-th frame.
     timestep : float, optional
-        Override timestep (fs) between frames. If None, parse from XYZ.
+        Override timestep (fs) between frames.
     ho_only : bool
         Only analyze H/O fragments.
     verbose : bool
@@ -418,28 +341,39 @@ def run_analysis(
     df : pandas.DataFrame
         Columns: frame, step, time_fs, and one column per species.
     """
-    # Set up PBC box
-    box = None
-    if cell is not None:
-        box = np.array([cell[0], cell[1], cell[2], 90.0, 90.0, 90.0],
-                       dtype=np.float32)
-
     # Load trajectory with MDAnalysis
     if verbose:
-        print(f"Loading trajectory: {xyz_path}")
+        print(f"Loading trajectory: {trajectory_path} with data file {data_file_path}")
 
-    u = mda.Universe(xyz_path)
+    u = mda.Universe(data_file_path, trajectory_path, format="LAMMPSDUMP")
+
+    # Element array mapping
+    elements = []
+    if type_map:
+        for t in u.atoms.types:
+            elements.append(type_map.get(int(t), "X"))
+    else:
+        # guess by mass
+        for m in u.atoms.masses:
+            if abs(m - 1.008) < 1.0:
+                elements.append("H")
+            elif abs(m - 15.999) < 1.0:
+                elements.append("O")
+            elif abs(m - 28.085) < 1.5:
+                elements.append("Si")
+            elif abs(m - 12.011) < 1.0:
+                elements.append("C")
+            else:
+                elements.append("X")
+    elements = np.array(elements)
 
     n_frames_total = u.trajectory.n_frames
     if verbose:
         print(f"  Total frames: {n_frames_total}")
         print(f"  Atoms per frame: {u.atoms.n_atoms}")
-        print(f"  Elements: {sorted(set(u.atoms.names))}")
+        print(f"  Elements: {sorted(set(elements))}")
         print(f"  Stride: every {stride} frame(s)")
         print()
-
-    # Element array (constant across frames for CP2K)
-    elements = np.array(u.atoms.names)
 
     # Collect results
     records = []
@@ -451,9 +385,11 @@ def run_analysis(
         ts = u.trajectory[frame_idx]
         positions = ts.positions.copy()
 
-        # Try to parse step/time from the comment line
-        # MDAnalysis stores the raw data; we read it separately
-        step_i = frame_idx
+        # LAMMPS dumps have dimensions [Lx, Ly, Lz, alpha, beta, gamma]
+        box = ts.dimensions
+
+        # Try to parse step/time
+        step_i = ts.data.get("step", frame_idx) if hasattr(ts, "data") else frame_idx
         time_fs_i = frame_idx * (timestep or 0.5)  # default 0.5 fs
 
         # Analyze species
@@ -647,33 +583,29 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         description=(
-            "Analyze reactive species from CP2K AIMD trajectory (XYZ format).\n"
+            "Analyze reactive species from LAMMPS trajectory.\n"
             "Identifies H₂O, H*, *OH, H₂O₂, O₂, H₂, etc. per frame."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            "  %(prog)s                                        # auto-read trajectory.xyz + trajectory.cell\n"
-            "  %(prog)s --cell 22 19.08 46.35                  # manually specify cell\n"
-            "  %(prog)s --xyz traj.xyz --cell 10 10 10 --plot  # custom xyz with plotting\n"
+            "  %(prog)s                                        # auto-read trajectory.lammpstrj + model.lmpdat\n"
+            "  %(prog)s --trajectory traj.lammpstrj --data-file model.lmpdat --type-map 1:O 2:H\n"
             "  %(prog)s --stride 5 --output-dir results/       # every 5th frame\n"
         ),
     )
 
     parser.add_argument(
-        "--xyz", type=str, default="trajectory.xyz",
-        help="Path to CP2K XYZ trajectory file (default: trajectory.xyz)",
+        "--trajectory", type=str, default="trajectory.lammpstrj",
+        help="Path to LAMMPS trajectory file (default: trajectory.lammpstrj)",
     )
     parser.add_argument(
-        "--cell", nargs=3, type=float, default=None,
-        metavar=("Lx", "Ly", "Lz"),
-        help="Simulation box dimensions in Å (Lx Ly Lz) for PBC. "
-             "Overrides --cell-file if both specified.",
+        "--data-file", type=str, default="model.lmpdat",
+        help="Path to LAMMPS data file (default: model.lmpdat)",
     )
     parser.add_argument(
-        "--cell-file", type=str, default="trajectory.cell",
-        help="CP2K .cell file to auto-read box dimensions (default: trajectory.cell). "
-             "Ignored if --cell is specified.",
+        "--type-map", type=str, nargs="+", default=None,
+        help="Map LAMMPS numeric types to elements (e.g. 1:O 2:H). If omitted, inferred from masses.",
     )
     parser.add_argument(
         "--roh", type=float, default=1.2,
@@ -693,7 +625,7 @@ def parse_args():
     )
     parser.add_argument(
         "--timestep", type=float, default=None,
-        help="Timestep between frames in fs (default: parse from XYZ or 0.5)",
+        help="Timestep between frames in fs (default: 0.5)",
     )
     parser.add_argument(
         "--output-dir", type=str, default="trajectory_species_results",
@@ -722,24 +654,21 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Resolve cell dimensions: --cell (manual) > --cell-file (auto)
-    cell = args.cell
-    if cell is None and args.cell_file:
-        cell_path = Path(args.cell_file)
-        if cell_path.exists():
-            if not args.quiet:
-                print(f"Auto-reading cell from: {cell_path}")
-            cell = parse_cp2k_cell_file(str(cell_path), verbose=not args.quiet)
-        else:
-            if not args.quiet:
-                print(f"  Warning: Cell file '{cell_path}' not found. Running without PBC.")
+    # Parse type map
+    type_map = None
+    if args.type_map:
+        type_map = {}
+        for tm in args.type_map:
+            k, v = tm.split(":")
+            type_map[int(k)] = v
 
     if not args.quiet:
         print("=" * 60)
-        print("CP2K AIMD Reactive Species Analysis")
+        print("LAMMPS AIMD Reactive Species Analysis")
         print("=" * 60)
-        print(f"\n  Trajectory:  {args.xyz}")
-        print(f"  PBC box:     {cell if cell else 'None (no PBC)'}")
+        print(f"\n  Trajectory:  {args.trajectory}")
+        print(f"  Data File:   {args.data_file}")
+        print(f"  Type Map:    {type_map if type_map else 'Inferred from masses'}")
         print(f"  Thresholds:  O-H < {args.roh} Å, O-O < {args.roo} Å, H-H < {args.rhh} Å")
         print(f"  Stride:      every {args.stride} frame(s)")
         print(f"  Output:      {output_dir}")
@@ -747,8 +676,9 @@ def main():
 
     # Run analysis
     df = run_analysis(
-        xyz_path=args.xyz,
-        cell=cell,
+        trajectory_path=args.trajectory,
+        data_file_path=args.data_file,
+        type_map=type_map,
         r_oh=args.roh,
         r_oo=args.roo,
         r_hh=args.rhh,
@@ -804,4 +734,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

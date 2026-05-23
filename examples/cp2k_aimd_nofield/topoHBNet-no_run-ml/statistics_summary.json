@@ -1,0 +1,97 @@
+{
+  "n_frames_analyzed": 853,
+  "basic_statistics": {
+    "hbond_count": {
+      "mean": 148.24150058616647,
+      "std": 9.27628870279469,
+      "min": 125,
+      "max": 167
+    },
+    "betti_0": {
+      "mean": 1.0140679953106682,
+      "std": 0.11777133275380408
+    },
+    "betti_1": {
+      "mean": 56.67057444314185,
+      "std": 7.326614944153003
+    },
+    "betti_2": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "geometry": {
+      "mean_distance_da": 2.8555924220435323,
+      "std_distance_da": 0.17939619437199408,
+      "mean_angle_dha": 158.21824153288856,
+      "std_angle_dha": 12.665963582812964
+    }
+  },
+  "advanced_statistics": {
+    "coordination": {
+      "mean": 3.2686665546522597,
+      "std": 1.0070528985892955,
+      "distribution": {
+        "1": 3685,
+        "2": 13511,
+        "3": 25249,
+        "4": 28508,
+        "5": 6094,
+        "6": 324
+      }
+    },
+    "degree": {
+      "mean": 3.2686665546522597,
+      "std": 1.0070528985892955,
+      "distribution": {
+        "1": 3685,
+        "2": 13511,
+        "3": 25249,
+        "4": 28508,
+        "5": 6094,
+        "6": 324
+      }
+    },
+    "lifetime": {
+      "mean_fs": 111.88761061946903,
+      "std_fs": 157.50048244496605,
+      "max_fs": 426.5
+    },
+    "clustering": {
+      "mean": 0.01415244736501818,
+      "std": 0.009198572484088292
+    },
+    "hbond_strength": {
+      "strong": 55088,
+      "moderate": 64884,
+      "weak": 6478,
+      "total": 126450,
+      "strong_pct": 43.56504547251878,
+      "moderate_pct": 51.31198102016607,
+      "weak_pct": 5.122973507315145
+    },
+    "persistent_homology": {
+      "available": true,
+      "frame_index": 426,
+      "total_frames": 853,
+      "all_frames_analyzed": true,
+      "dynamics_summary": {
+        "total_persistence_H0": {
+          "mean": 422.42930731266694,
+          "std": 1.3963156537622803
+        },
+        "total_persistence_H1": {
+          "mean": 48.89449207726999,
+          "std": 1.1936737443244734
+        },
+        "n_features_H0": {
+          "mean": 145.0,
+          "std": 0.0
+        },
+        "n_features_H1": {
+          "mean": 68.52754982415006,
+          "std": 1.962904091545351
+        }
+      }
+    }
+  }
+}
