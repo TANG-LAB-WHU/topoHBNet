@@ -8521,12 +8521,1492 @@
   },
   {
     "timestep": 852,
-    "n_hbonds": 125,
+    "n_hbonds": 166,
     "betti_0": 1,
-    "betti_1": 42,
+    "betti_1": 69,
     "betti_2": 0,
-    "euler_char": -41,
-    "mean_distance_da": 2.8542550619313687,
-    "mean_angle_dha": 158.42391345084087
+    "euler_char": -68,
+    "mean_distance_da": 2.8517870774741776,
+    "mean_angle_dha": 158.44927083401916
+  },
+  {
+    "timestep": 853,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8512468177794457,
+    "mean_angle_dha": 158.59001702368806
+  },
+  {
+    "timestep": 854,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.85119426435561,
+    "mean_angle_dha": 158.5415586806385
+  },
+  {
+    "timestep": 855,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8510321252847306,
+    "mean_angle_dha": 158.73952555388487
+  },
+  {
+    "timestep": 856,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8509894166283654,
+    "mean_angle_dha": 158.70136202879556
+  },
+  {
+    "timestep": 857,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.850955086650397,
+    "mean_angle_dha": 158.66447351201577
+  },
+  {
+    "timestep": 858,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8509246562058923,
+    "mean_angle_dha": 158.62032064259367
+  },
+  {
+    "timestep": 859,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8483643268385865,
+    "mean_angle_dha": 158.71746948920904
+  },
+  {
+    "timestep": 860,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8483206004046524,
+    "mean_angle_dha": 158.67225424326566
+  },
+  {
+    "timestep": 861,
+    "n_hbonds": 157,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.85063853560825,
+    "mean_angle_dha": 158.91154471707534
+  },
+  {
+    "timestep": 862,
+    "n_hbonds": 156,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8496460670738357,
+    "mean_angle_dha": 159.11991475220495
+  },
+  {
+    "timestep": 863,
+    "n_hbonds": 158,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.847748566991338,
+    "mean_angle_dha": 159.04657015136462
+  },
+  {
+    "timestep": 864,
+    "n_hbonds": 158,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.847686475647844,
+    "mean_angle_dha": 159.0083848232665
+  },
+  {
+    "timestep": 865,
+    "n_hbonds": 157,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8449471033370757,
+    "mean_angle_dha": 159.1238266972196
+  },
+  {
+    "timestep": 866,
+    "n_hbonds": 157,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.844853117847009,
+    "mean_angle_dha": 159.08036843430358
+  },
+  {
+    "timestep": 867,
+    "n_hbonds": 157,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.844753106427534,
+    "mean_angle_dha": 159.04031345881268
+  },
+  {
+    "timestep": 868,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8423343623505524,
+    "mean_angle_dha": 158.9186405657111
+  },
+  {
+    "timestep": 869,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8443837173326143,
+    "mean_angle_dha": 158.7131790790896
+  },
+  {
+    "timestep": 870,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.844216945674779,
+    "mean_angle_dha": 158.7107712733062
+  },
+  {
+    "timestep": 871,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8440566614911784,
+    "mean_angle_dha": 158.70844845525707
+  },
+  {
+    "timestep": 872,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.845265767170675,
+    "mean_angle_dha": 158.46894335544283
+  },
+  {
+    "timestep": 873,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8421820526416743,
+    "mean_angle_dha": 158.5614918101052
+  },
+  {
+    "timestep": 874,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.84206517257878,
+    "mean_angle_dha": 158.56180557307042
+  },
+  {
+    "timestep": 875,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8391677612485724,
+    "mean_angle_dha": 158.69270265483647
+  },
+  {
+    "timestep": 876,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8361675275653537,
+    "mean_angle_dha": 158.81790580340513
+  },
+  {
+    "timestep": 877,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8361019537837864,
+    "mean_angle_dha": 158.82605862452016
+  },
+  {
+    "timestep": 878,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8360512553850388,
+    "mean_angle_dha": 158.83227785818946
+  },
+  {
+    "timestep": 879,
+    "n_hbonds": 158,
+    "betti_0": 1,
+    "betti_1": 62,
+    "betti_2": 0,
+    "euler_char": -61,
+    "mean_distance_da": 2.835179299637168,
+    "mean_angle_dha": 159.084941243604
+  },
+  {
+    "timestep": 880,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.8379385238808488,
+    "mean_angle_dha": 159.1982169009245
+  },
+  {
+    "timestep": 881,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.837905773888125,
+    "mean_angle_dha": 159.23178196755632
+  },
+  {
+    "timestep": 882,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.837869176765754,
+    "mean_angle_dha": 159.26492601200397
+  },
+  {
+    "timestep": 883,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.836368991536995,
+    "mean_angle_dha": 159.5575028351045
+  },
+  {
+    "timestep": 884,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.8363245865044013,
+    "mean_angle_dha": 159.58593169868223
+  },
+  {
+    "timestep": 885,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.8362729954619716,
+    "mean_angle_dha": 159.6040617102425
+  },
+  {
+    "timestep": 886,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.836213674021549,
+    "mean_angle_dha": 159.61557854399825
+  },
+  {
+    "timestep": 887,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.836146666916045,
+    "mean_angle_dha": 159.6179481515711
+  },
+  {
+    "timestep": 888,
+    "n_hbonds": 151,
+    "betti_0": 1,
+    "betti_1": 59,
+    "betti_2": 0,
+    "euler_char": -58,
+    "mean_distance_da": 2.833530998830469,
+    "mean_angle_dha": 159.75463322819652
+  },
+  {
+    "timestep": 889,
+    "n_hbonds": 151,
+    "betti_0": 1,
+    "betti_1": 59,
+    "betti_2": 0,
+    "euler_char": -58,
+    "mean_distance_da": 2.8334155725613743,
+    "mean_angle_dha": 159.7569480616834
+  },
+  {
+    "timestep": 890,
+    "n_hbonds": 151,
+    "betti_0": 1,
+    "betti_1": 59,
+    "betti_2": 0,
+    "euler_char": -58,
+    "mean_distance_da": 2.8332957150174467,
+    "mean_angle_dha": 159.75290301617315
+  },
+  {
+    "timestep": 891,
+    "n_hbonds": 153,
+    "betti_0": 1,
+    "betti_1": 60,
+    "betti_2": 0,
+    "euler_char": -59,
+    "mean_distance_da": 2.835654007811453,
+    "mean_angle_dha": 159.23801903250444
+  },
+  {
+    "timestep": 892,
+    "n_hbonds": 153,
+    "betti_0": 1,
+    "betti_1": 60,
+    "betti_2": 0,
+    "euler_char": -59,
+    "mean_distance_da": 2.83553490113054,
+    "mean_angle_dha": 159.2637436898302
+  },
+  {
+    "timestep": 893,
+    "n_hbonds": 153,
+    "betti_0": 1,
+    "betti_1": 60,
+    "betti_2": 0,
+    "euler_char": -59,
+    "mean_distance_da": 2.8354136835079164,
+    "mean_angle_dha": 159.30374765524985
+  },
+  {
+    "timestep": 894,
+    "n_hbonds": 152,
+    "betti_0": 1,
+    "betti_1": 60,
+    "betti_2": 0,
+    "euler_char": -59,
+    "mean_distance_da": 2.8325550283142533,
+    "mean_angle_dha": 159.52514209363213
+  },
+  {
+    "timestep": 895,
+    "n_hbonds": 152,
+    "betti_0": 1,
+    "betti_1": 60,
+    "betti_2": 0,
+    "euler_char": -59,
+    "mean_distance_da": 2.8324250895262337,
+    "mean_angle_dha": 159.58760308869847
+  },
+  {
+    "timestep": 896,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 62,
+    "betti_2": 0,
+    "euler_char": -61,
+    "mean_distance_da": 2.8333492433627727,
+    "mean_angle_dha": 159.30821096054223
+  },
+  {
+    "timestep": 897,
+    "n_hbonds": 158,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.829870368194839,
+    "mean_angle_dha": 159.32916281718926
+  },
+  {
+    "timestep": 898,
+    "n_hbonds": 158,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.829709181118755,
+    "mean_angle_dha": 159.37602925078264
+  },
+  {
+    "timestep": 899,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.830556680034722,
+    "mean_angle_dha": 159.15963610252925
+  },
+  {
+    "timestep": 900,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8304108297023323,
+    "mean_angle_dha": 159.15980034945574
+  },
+  {
+    "timestep": 901,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.832346215402127,
+    "mean_angle_dha": 159.18290417495888
+  },
+  {
+    "timestep": 902,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8332319348805832,
+    "mean_angle_dha": 158.87430978582628
+  },
+  {
+    "timestep": 903,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.833104865746628,
+    "mean_angle_dha": 158.8018948804604
+  },
+  {
+    "timestep": 904,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8329690979535185,
+    "mean_angle_dha": 158.72473605160457
+  },
+  {
+    "timestep": 905,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.832824909947724,
+    "mean_angle_dha": 158.64277640860618
+  },
+  {
+    "timestep": 906,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.832674042440576,
+    "mean_angle_dha": 158.5614179238344
+  },
+  {
+    "timestep": 907,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8325195046108314,
+    "mean_angle_dha": 158.48316375435147
+  },
+  {
+    "timestep": 908,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8323644806419357,
+    "mean_angle_dha": 158.40810130242144
+  },
+  {
+    "timestep": 909,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8325795597724714,
+    "mean_angle_dha": 158.10238148527026
+  },
+  {
+    "timestep": 910,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.832463160064793,
+    "mean_angle_dha": 158.03957841564267
+  },
+  {
+    "timestep": 911,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8278998027068303,
+    "mean_angle_dha": 158.3362504888102
+  },
+  {
+    "timestep": 912,
+    "n_hbonds": 159,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8277778209087874,
+    "mean_angle_dha": 158.273055016045
+  },
+  {
+    "timestep": 913,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.831079869995402,
+    "mean_angle_dha": 158.16004132241898
+  },
+  {
+    "timestep": 914,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8309664750284576,
+    "mean_angle_dha": 158.08558563192008
+  },
+  {
+    "timestep": 915,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.833564288371218,
+    "mean_angle_dha": 157.89597737129816
+  },
+  {
+    "timestep": 916,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8334698834335654,
+    "mean_angle_dha": 157.80699557941674
+  },
+  {
+    "timestep": 917,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8333866774516374,
+    "mean_angle_dha": 157.71613728682908
+  },
+  {
+    "timestep": 918,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.833313762206499,
+    "mean_angle_dha": 157.62735883852255
+  },
+  {
+    "timestep": 919,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8351455403919674,
+    "mean_angle_dha": 157.68725761614243
+  },
+  {
+    "timestep": 920,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.835091446066527,
+    "mean_angle_dha": 157.6172171375316
+  },
+  {
+    "timestep": 921,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8350413387399973,
+    "mean_angle_dha": 157.55234057417073
+  },
+  {
+    "timestep": 922,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8389143549352727,
+    "mean_angle_dha": 157.0748330794553
+  },
+  {
+    "timestep": 923,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8388596297111843,
+    "mean_angle_dha": 157.01134175489338
+  },
+  {
+    "timestep": 924,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.838801741971585,
+    "mean_angle_dha": 156.96007220457125
+  },
+  {
+    "timestep": 925,
+    "n_hbonds": 164,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.838540564067885,
+    "mean_angle_dha": 156.69954042565035
+  },
+  {
+    "timestep": 926,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.838825825660265,
+    "mean_angle_dha": 156.46487288031656
+  },
+  {
+    "timestep": 927,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.838747832544866,
+    "mean_angle_dha": 156.47009957101028
+  },
+  {
+    "timestep": 928,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.838666616906699,
+    "mean_angle_dha": 156.49198994713768
+  },
+  {
+    "timestep": 929,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8385852301153176,
+    "mean_angle_dha": 156.5273642727572
+  },
+  {
+    "timestep": 930,
+    "n_hbonds": 164,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8357123569749496,
+    "mean_angle_dha": 156.66070734518783
+  },
+  {
+    "timestep": 931,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.83837576295933,
+    "mean_angle_dha": 156.5999227236866
+  },
+  {
+    "timestep": 932,
+    "n_hbonds": 164,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8358369315435934,
+    "mean_angle_dha": 156.80504189176932
+  },
+  {
+    "timestep": 933,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 68,
+    "betti_2": 0,
+    "euler_char": -67,
+    "mean_distance_da": 2.838522564744684,
+    "mean_angle_dha": 156.78439356821042
+  },
+  {
+    "timestep": 934,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 68,
+    "betti_2": 0,
+    "euler_char": -67,
+    "mean_distance_da": 2.838467785261275,
+    "mean_angle_dha": 156.86517973020744
+  },
+  {
+    "timestep": 935,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 68,
+    "betti_2": 0,
+    "euler_char": -67,
+    "mean_distance_da": 2.8384323472177058,
+    "mean_angle_dha": 156.94745452716583
+  },
+  {
+    "timestep": 936,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 68,
+    "betti_2": 0,
+    "euler_char": -67,
+    "mean_distance_da": 2.838415074613881,
+    "mean_angle_dha": 157.02942801883646
+  },
+  {
+    "timestep": 937,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.8397936525622947,
+    "mean_angle_dha": 156.89182505459507
+  },
+  {
+    "timestep": 938,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.8397862344508877,
+    "mean_angle_dha": 156.9805494713176
+  },
+  {
+    "timestep": 939,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.8397818778482047,
+    "mean_angle_dha": 157.069709020794
+  },
+  {
+    "timestep": 940,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.839775137635972,
+    "mean_angle_dha": 157.1588859506801
+  },
+  {
+    "timestep": 941,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.8397616666339998,
+    "mean_angle_dha": 157.24845950347228
+  },
+  {
+    "timestep": 942,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 70,
+    "betti_2": 0,
+    "euler_char": -69,
+    "mean_distance_da": 2.8405885872711676,
+    "mean_angle_dha": 157.11469770890108
+  },
+  {
+    "timestep": 943,
+    "n_hbonds": 168,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.8434004897359992,
+    "mean_angle_dha": 157.1175541473052
+  },
+  {
+    "timestep": 944,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 70,
+    "betti_2": 0,
+    "euler_char": -69,
+    "mean_distance_da": 2.8408722183699555,
+    "mean_angle_dha": 157.3535636745393
+  },
+  {
+    "timestep": 945,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 70,
+    "betti_2": 0,
+    "euler_char": -69,
+    "mean_distance_da": 2.8408126100201785,
+    "mean_angle_dha": 157.4507806346806
+  },
+  {
+    "timestep": 946,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 70,
+    "betti_2": 0,
+    "euler_char": -69,
+    "mean_distance_da": 2.840744957209867,
+    "mean_angle_dha": 157.5478077027645
+  },
+  {
+    "timestep": 947,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.8387802356063063,
+    "mean_angle_dha": 157.83773524165196
+  },
+  {
+    "timestep": 948,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 70,
+    "betti_2": 0,
+    "euler_char": -69,
+    "mean_distance_da": 2.83902799105742,
+    "mean_angle_dha": 157.69172673316274
+  },
+  {
+    "timestep": 949,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 70,
+    "betti_2": 0,
+    "euler_char": -69,
+    "mean_distance_da": 2.8389087786494125,
+    "mean_angle_dha": 157.76515854446777
+  },
+  {
+    "timestep": 950,
+    "n_hbonds": 168,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.840789475860796,
+    "mean_angle_dha": 157.63471387070766
+  },
+  {
+    "timestep": 951,
+    "n_hbonds": 168,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.8406953042848837,
+    "mean_angle_dha": 157.69130523349708
+  },
+  {
+    "timestep": 952,
+    "n_hbonds": 167,
+    "betti_0": 1,
+    "betti_1": 72,
+    "betti_2": 0,
+    "euler_char": -71,
+    "mean_distance_da": 2.8385468231305,
+    "mean_angle_dha": 157.93138234202945
+  },
+  {
+    "timestep": 953,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.83951352349983,
+    "mean_angle_dha": 158.12107241561046
+  },
+  {
+    "timestep": 954,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.839463426441277,
+    "mean_angle_dha": 158.16230647410757
+  },
+  {
+    "timestep": 955,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.838959306509455,
+    "mean_angle_dha": 158.19929989055854
+  },
+  {
+    "timestep": 956,
+    "n_hbonds": 166,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.836168070781439,
+    "mean_angle_dha": 158.32349435487322
+  },
+  {
+    "timestep": 957,
+    "n_hbonds": 164,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.837017758636522,
+    "mean_angle_dha": 158.8113505824175
+  },
+  {
+    "timestep": 958,
+    "n_hbonds": 169,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.833988335703295,
+    "mean_angle_dha": 158.74044404066183
+  },
+  {
+    "timestep": 959,
+    "n_hbonds": 169,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.833938567492678,
+    "mean_angle_dha": 158.75496158955258
+  },
+  {
+    "timestep": 960,
+    "n_hbonds": 169,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.8338866871466943,
+    "mean_angle_dha": 158.75902163899664
+  },
+  {
+    "timestep": 961,
+    "n_hbonds": 169,
+    "betti_0": 1,
+    "betti_1": 71,
+    "betti_2": 0,
+    "euler_char": -70,
+    "mean_distance_da": 2.833832271322679,
+    "mean_angle_dha": 158.75001979709955
+  },
+  {
+    "timestep": 962,
+    "n_hbonds": 164,
+    "betti_0": 1,
+    "betti_1": 68,
+    "betti_2": 0,
+    "euler_char": -67,
+    "mean_distance_da": 2.843422207552773,
+    "mean_angle_dha": 158.63700221368993
+  },
+  {
+    "timestep": 963,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 69,
+    "betti_2": 0,
+    "euler_char": -68,
+    "mean_distance_da": 2.8440154845362553,
+    "mean_angle_dha": 158.3536170968257
+  },
+  {
+    "timestep": 964,
+    "n_hbonds": 165,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8449639296683435,
+    "mean_angle_dha": 158.34740167163403
+  },
+  {
+    "timestep": 965,
+    "n_hbonds": 164,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.841448758009994,
+    "mean_angle_dha": 158.2764886695388
+  },
+  {
+    "timestep": 966,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.83905876110483,
+    "mean_angle_dha": 158.38984625023323
+  },
+  {
+    "timestep": 967,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.839220466424725,
+    "mean_angle_dha": 158.5529542343546
+  },
+  {
+    "timestep": 968,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8418697772390695,
+    "mean_angle_dha": 158.19755748017573
+  },
+  {
+    "timestep": 969,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.845335271189411,
+    "mean_angle_dha": 158.12179662440698
+  },
+  {
+    "timestep": 970,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8441893085219916,
+    "mean_angle_dha": 157.825184748947
+  },
+  {
+    "timestep": 971,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.844121941836775,
+    "mean_angle_dha": 157.77229691951487
+  },
+  {
+    "timestep": 972,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8440610812553566,
+    "mean_angle_dha": 157.7263170509593
+  },
+  {
+    "timestep": 973,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8440076481655154,
+    "mean_angle_dha": 157.68927804146185
+  },
+  {
+    "timestep": 974,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8461188923989593,
+    "mean_angle_dha": 157.47378455336903
+  },
+  {
+    "timestep": 975,
+    "n_hbonds": 163,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8460846376348976,
+    "mean_angle_dha": 157.46213463523188
+  },
+  {
+    "timestep": 976,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.842459888976993,
+    "mean_angle_dha": 157.46229495973716
+  },
+  {
+    "timestep": 977,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8424083839090923,
+    "mean_angle_dha": 157.4715614297658
+  },
+  {
+    "timestep": 978,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 65,
+    "betti_2": 0,
+    "euler_char": -64,
+    "mean_distance_da": 2.8401506631724214,
+    "mean_angle_dha": 157.70188982405534
+  },
+  {
+    "timestep": 979,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8399217652113182,
+    "mean_angle_dha": 157.5092196543968
+  },
+  {
+    "timestep": 980,
+    "n_hbonds": 162,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.83985359153145,
+    "mean_angle_dha": 157.5584399047088
+  },
+  {
+    "timestep": 981,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8376191981621934,
+    "mean_angle_dha": 157.80586784926737
+  },
+  {
+    "timestep": 982,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 66,
+    "betti_2": 0,
+    "euler_char": -65,
+    "mean_distance_da": 2.8375152666429133,
+    "mean_angle_dha": 157.8495185250132
+  },
+  {
+    "timestep": 983,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.837790758685445,
+    "mean_angle_dha": 157.8896922191095
+  },
+  {
+    "timestep": 984,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.837634795013505,
+    "mean_angle_dha": 157.92842636184358
+  },
+  {
+    "timestep": 985,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.837481532880667,
+    "mean_angle_dha": 157.96137586963295
+  },
+  {
+    "timestep": 986,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8350999908439563,
+    "mean_angle_dha": 158.17332891096783
+  },
+  {
+    "timestep": 987,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.834955709603629,
+    "mean_angle_dha": 158.19580106662448
+  },
+  {
+    "timestep": 988,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.834819854536992,
+    "mean_angle_dha": 158.21225180338263
+  },
+  {
+    "timestep": 989,
+    "n_hbonds": 160,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8346907309183664,
+    "mean_angle_dha": 158.22313764145892
+  },
+  {
+    "timestep": 990,
+    "n_hbonds": 161,
+    "betti_0": 1,
+    "betti_1": 67,
+    "betti_2": 0,
+    "euler_char": -66,
+    "mean_distance_da": 2.8357953103688587,
+    "mean_angle_dha": 157.991738418755
+  },
+  {
+    "timestep": 991,
+    "n_hbonds": 157,
+    "betti_0": 1,
+    "betti_1": 64,
+    "betti_2": 0,
+    "euler_char": -63,
+    "mean_distance_da": 2.8382427727905615,
+    "mean_angle_dha": 157.88067264716875
+  },
+  {
+    "timestep": 992,
+    "n_hbonds": 152,
+    "betti_0": 1,
+    "betti_1": 60,
+    "betti_2": 0,
+    "euler_char": -59,
+    "mean_distance_da": 2.8375967807023392,
+    "mean_angle_dha": 158.50739608452065
+  },
+  {
+    "timestep": 993,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 62,
+    "betti_2": 0,
+    "euler_char": -61,
+    "mean_distance_da": 2.8342781457916124,
+    "mean_angle_dha": 158.42365989318117
+  },
+  {
+    "timestep": 994,
+    "n_hbonds": 156,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8360692306570914,
+    "mean_angle_dha": 158.17953334762055
+  },
+  {
+    "timestep": 995,
+    "n_hbonds": 156,
+    "betti_0": 1,
+    "betti_1": 63,
+    "betti_2": 0,
+    "euler_char": -62,
+    "mean_distance_da": 2.8359994529885264,
+    "mean_angle_dha": 158.1648236103328
+  },
+  {
+    "timestep": 996,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 62,
+    "betti_2": 0,
+    "euler_char": -61,
+    "mean_distance_da": 2.8336879404768163,
+    "mean_angle_dha": 158.34822267262211
+  },
+  {
+    "timestep": 997,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 62,
+    "betti_2": 0,
+    "euler_char": -61,
+    "mean_distance_da": 2.833617543729273,
+    "mean_angle_dha": 158.3294467601971
+  },
+  {
+    "timestep": 998,
+    "n_hbonds": 155,
+    "betti_0": 1,
+    "betti_1": 62,
+    "betti_2": 0,
+    "euler_char": -61,
+    "mean_distance_da": 2.8335376923770914,
+    "mean_angle_dha": 158.3109913384766
+  },
+  {
+    "timestep": 999,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.831826763452752,
+    "mean_angle_dha": 158.54598140494315
+  },
+  {
+    "timestep": 1000,
+    "n_hbonds": 154,
+    "betti_0": 1,
+    "betti_1": 61,
+    "betti_2": 0,
+    "euler_char": -60,
+    "mean_distance_da": 2.8316878682286584,
+    "mean_angle_dha": 158.53701609341212
   }
 ]
