@@ -1,0 +1,104 @@
+{
+  "n_frames_analyzed": 1001,
+  "basic_statistics": {
+    "hbond_count": {
+      "mean": 148.44055944055944,
+      "std": 8.281312284509003,
+      "min": 130,
+      "max": 165
+    },
+    "betti_0": {
+      "mean": 1.0,
+      "std": 0.0
+    },
+    "betti_1": {
+      "mean": 56.52547452547453,
+      "std": 6.558550587880422
+    },
+    "betti_2": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "geometry": {
+      "mean_distance_da": 2.8534782218452666,
+      "std_distance_da": 0.18305475390707332,
+      "mean_angle_dha": 157.86772790526243,
+      "std_angle_dha": 13.004449016082372
+    }
+  },
+  "advanced_statistics": {
+    "coordination": {
+      "mean": 3.27018431911967,
+      "std": 1.005947455086547,
+      "distribution": {
+        "1": 4546,
+        "2": 15798,
+        "3": 28255,
+        "4": 35526,
+        "5": 6333,
+        "6": 417
+      }
+    },
+    "degree": {
+      "mean": 3.27018431911967,
+      "std": 1.005947455086547,
+      "distribution": {
+        "1": 4546,
+        "2": 15798,
+        "3": 28255,
+        "4": 35526,
+        "5": 6333,
+        "6": 417
+      }
+    },
+    "lifetime": {
+      "mean_fs": 114.82148377125193,
+      "std_fs": 175.17901037070607,
+      "max_fs": 500.5
+    },
+    "clustering": {
+      "mean": 0.016096730693891934,
+      "std": 0.010586786910589304
+    },
+    "hbond_strength": {
+      "strong": 63056,
+      "moderate": 78626,
+      "weak": 6907,
+      "total": 148589,
+      "strong_pct": 42.43651952701748,
+      "moderate_pct": 52.91508792710093,
+      "weak_pct": 4.648392545881593
+    },
+    "persistent_homology": {
+      "available": true,
+      "frame_index": 500,
+      "total_frames": 1001,
+      "all_frames_analyzed": true,
+      "dynamics_summary": {
+        "total_persistence_H0": {
+          "mean": 425.29590422952765,
+          "std": 2.0515711278667266
+        },
+        "total_persistence_H1": {
+          "mean": 49.84348568366639,
+          "std": 1.5231411146062555
+        },
+        "n_features_H0": {
+          "mean": 147.0,
+          "std": 0.0
+        },
+        "n_features_H1": {
+          "mean": 69.65834165834166,
+          "std": 3.1348565392424605
+        }
+      }
+    }
+  },
+  "topological_machine_learning": {
+    "pca_explained_variance": [
+      0.1284019649028778,
+      0.09151887148618698
+    ],
+    "feature_extraction": "Cell2Vec (Embedding) + SAN (TNN)"
+  }
+}
