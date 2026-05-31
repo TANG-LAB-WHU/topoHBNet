@@ -58,6 +58,7 @@ results_*/
 # raw_data_csv/
 *.log
 !pyproject.json
+**/pysr_runs/
 
 # Large data files
 *.lammpstrj
