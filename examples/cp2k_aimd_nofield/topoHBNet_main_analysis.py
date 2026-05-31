@@ -524,6 +524,74 @@ def classify_hbond_strength(results: List[Dict]) -> Dict:
     }
 
 
+def compute_water_hbond_states(results: List[Dict], frames: List[Frame], detector: HBondDetector) -> Dict:
+    """
+    Compute detailed hydrogen-bonding states (nDmA, free H2O, etc.) for water molecules.
+    """
+    all_states = []
+    state_counts = defaultdict(int)
+    raw_records = []
+    
+    for r, frame in zip(results, frames):
+        f_idx = r.get('timestep', 0)
+        # Identify water molecules in this frame
+        water_mols = detector.identify_water_molecules(frame)
+        water_o_indices = {wm.o_idx for wm in water_mols}
+        
+        # Initialize counts for each water oxygen
+        donor_count = {o_idx: 0 for o_idx in water_o_indices}
+        acceptor_count = {o_idx: 0 for o_idx in water_o_indices}
+        
+        # Count donor and acceptor roles for each H-bond in this frame
+        for hb in r['hbonds']:
+            # Only count H-bonds where the atoms belong to identified water molecules
+            if hb.donor_o_idx in water_o_indices:
+                donor_count[hb.donor_o_idx] += 1
+            if hb.acceptor_o_idx in water_o_indices:
+                acceptor_count[hb.acceptor_o_idx] += 1
+                
+        # Classify the state of each water molecule
+        for o_idx in water_o_indices:
+            d = donor_count[o_idx]
+            a = acceptor_count[o_idx]
+            
+            if d == 0 and a == 0:
+                state = 'free H2O'
+            else:
+                state = f'{d}D{a}A'
+                
+            all_states.append(state)
+            state_counts[state] += 1
+            raw_records.append({
+                'frame_idx': int(f_idx),
+                'atom_idx': int(o_idx),
+                'donor_count': int(d),
+                'acceptor_count': int(a),
+                'state': state
+            })
+            
+    if not all_states:
+        return {'distribution': {}, 'raw_data': [], 'raw_records': []}
+        
+    # Calculate percentage distribution
+    total_water_observations = len(all_states)
+    distribution = {}
+    for state, count in state_counts.items():
+        distribution[state] = {
+            'count': int(count),
+            'percentage': float(100 * count / total_water_observations)
+        }
+        
+    # Sort distribution by state name (e.g. 1D1A, 1D2A, 2D2A, free H2O)
+    sorted_distribution = dict(sorted(distribution.items(), key=lambda x: x[0]))
+    
+    return {
+        'distribution': sorted_distribution,
+        'raw_data': all_states,
+        'raw_records': raw_records
+    }
+
+
 def _compute_single_frame_persistence(frame: Frame, max_edge_length: float = 5.0) -> Dict:
     """
     Compute persistence for a single frame.
@@ -1032,6 +1100,120 @@ def generate_basic_plots(results: List[Dict], output_dir: Path, timestep_fs: flo
             print(f"      KDE Peaks: {n_peak_ang} (main={main_peak_ang:.1f}°; all=[{peaks_str}]°)")
 
 
+def plot_water_states_distribution(water_states_data: Dict, output_dir: Path, dpi: int):
+    """
+    Plot the distribution of water hydrogen bond coordination states (nDmA).
+    """
+    import matplotlib.pyplot as plt
+    
+    dist = water_states_data['distribution']
+    if not dist:
+        return
+        
+    states = list(dist.keys())
+    percentages = [info['percentage'] for info in dist.values()]
+    counts = [info['count'] for info in dist.values()]
+    
+    # Premium color palette for states
+    # Covers all physically relevant nDmA states in interface water systems
+    state_colors = []
+    color_map = {
+        'free H2O': '#AEB6BF', # gray — isolated water
+        # Symmetric states (D > 0 and A > 0)
+        '1D1A': '#FAD7A0',    # soft orange-yellow
+        '1D2A': '#F5B7B1',    # soft pink-red
+        '2D1A': '#AED6F1',    # soft light blue
+        '2D2A': '#A9DFBF',    # soft green (tetrahedral, bulk-like)
+        '3D1A': '#D2B4DE',    # soft purple (bifurcated donor)
+        '1D3A': '#A3E4D7',    # soft teal (overcoordinated acceptor)
+        '2D3A': '#7FB3D8',    # steel blue
+        '3D2A': '#C39BD3',    # medium purple
+        # Donor-only states (A = 0): common at hydrophobic / O2 interface
+        '1D0A': '#F9E79F',    # soft yellow
+        '2D0A': '#F4D03F',    # golden yellow
+        '3D0A': '#D4AC0D',    # dark gold (bifurcated, very rare)
+        # Acceptor-only states (D = 0): common at charged surfaces
+        '0D1A': '#D5F5E3',    # pale green
+        '0D2A': '#82E0AA',    # medium green
+        '0D3A': '#27AE60',    # deep green (overcoordinated, rare)
+        # Extreme edge cases
+        '0D4A': '#1E8449',    # forest green (very rare)
+        '4D0A': '#B7950B',    # olive gold (artifact)
+    }
+    
+    for s in states:
+        state_colors.append(color_map.get(s, '#D5D8DC'))
+        
+    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig.suptitle('Water Hydrogen Bond Coordination States ($nDmA$)', fontsize=15, fontweight='bold', color='#2C3E50', y=0.98)
+    
+    # Left: Bar chart of all states
+    ax_bar = axes[0]
+    bars = ax_bar.bar(states, percentages, color=state_colors, edgecolor='#E5E7E9', linewidth=1.2, alpha=0.85)
+    ax_bar.set_ylabel('Percentage (%)', fontsize=12)
+    ax_bar.set_xlabel('Coordination State', fontsize=12)
+    ax_bar.set_title('Detailed State Distribution', fontsize=12, fontweight='bold', color='#2C3E50', pad=10)
+    ax_bar.grid(axis='y', color=COLORS['gray_grid'], alpha=0.5)
+    ax_bar.tick_params(axis='x', rotation=90)
+    
+    # Add values on top of bars
+    for bar in bars:
+        height = bar.get_height()
+        ax_bar.annotate(f'{height:.1f}%',
+                    xy=(bar.get_x() + bar.get_width() / 2, height),
+                    xytext=(0, 3),
+                    textcoords="offset points",
+                    ha='center', va='bottom', fontsize=10, fontweight='bold', color='#34495E')
+                    
+    # Right: Pie chart of major states (donut chart)
+    ax_pie = axes[1]
+    
+    pie_labels = []
+    pie_sizes = []
+    pie_colors = []
+    others_pct = 0.0
+    
+    # Sort states by percentage descending
+    sorted_states = sorted(dist.items(), key=lambda x: x[1]['percentage'], reverse=True)
+    
+    for state, info in sorted_states:
+        pct = info['percentage']
+        if pct >= 2.0:
+            pie_labels.append(state)
+            pie_sizes.append(pct)
+            pie_colors.append(color_map.get(state, '#D5D8DC'))
+        else:
+            others_pct += pct
+            
+    if others_pct > 0:
+        pie_labels.append('Others')
+        pie_sizes.append(others_pct)
+        pie_colors.append('#E5E7E9')
+        
+    explode = [0.03 if s == '2D2A' or s == 'free H2O' else 0 for s in pie_labels]
+    
+    wedges, texts, autotexts = ax_pie.pie(
+        pie_sizes, explode=explode, labels=pie_labels, colors=pie_colors,
+        autopct='%1.1f%%', startangle=140, pctdistance=0.75,
+        textprops=dict(color="#2C3E50", fontsize=11),
+        wedgeprops=dict(edgecolor='#E5E7E9', linewidth=1.2)
+    )
+    
+    for autotext in autotexts:
+        autotext.set_weight('bold')
+        
+    centre_circle = plt.Circle((0,0), 0.50, fc='white', edgecolor='#E5E7E9')
+    ax_pie.add_artist(centre_circle)
+    
+    ax_pie.set_title('Major Coordination States Summary', fontsize=12, fontweight='bold', color='#2C3E50', pad=10)
+    
+    fig.tight_layout()
+    fig.savefig(output_dir / "water_states_distribution.png", dpi=dpi, bbox_inches='tight')
+    fig.savefig(output_dir / "water_states_distribution.svg", format='svg', bbox_inches='tight')
+    plt.close(fig)
+    print(f"    Saved: water_states_distribution.png, water_states_distribution.svg")
+
+
 def generate_advanced_plots(results: List[Dict], frames: List[Frame], 
                            advanced_stats: Dict, output_dir: Path, 
                            timestep_fs: float, sample_interval: int, dpi: int,
@@ -1235,6 +1417,10 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
                 legend_fontsize=dynamics_legend_fontsize
             )
             print(f"    Saved: persistence_dynamics.png, persistence_dynamics.svg")
+
+    # 10. Water Coordination States Distribution
+    if 'water_states' in advanced_stats:
+        plot_water_states_distribution(advanced_stats['water_states'], output_dir, dpi)
 
 
 # =============================================================================
@@ -1525,6 +1711,7 @@ def save_results(results: List[Dict], advanced_stats: Dict, output_dir: Path, ml
                 'std': advanced_stats['coordination']['std'],
                 'distribution': advanced_stats['coordination']['distribution'],
             },
+            'water_states': advanced_stats['water_states']['distribution'],
             'degree': {
                 'mean': advanced_stats['degree']['mean'],
                 'std': advanced_stats['degree']['std'],
@@ -1761,6 +1948,25 @@ def save_raw_data(results: List[Dict], advanced_stats: Dict, ml_results: Optiona
         df_persist.to_csv(out_path / "persistence_dynamics.csv", index=False)
         print(f"    Saved: persistence_dynamics.csv")
 
+    # 8. Water Coordination States
+    if 'water_states' in advanced_stats:
+        if 'raw_records' in advanced_stats['water_states']:
+            df_states_raw = pd.DataFrame(advanced_stats['water_states']['raw_records'])
+            df_states_raw.to_csv(out_path / "water_states_raw.csv", index=False)
+            print(f"    Saved: water_states_raw.csv")
+        
+        if 'distribution' in advanced_stats['water_states']:
+            dist_list = []
+            for s_name, s_info in advanced_stats['water_states']['distribution'].items():
+                dist_list.append({
+                    'coordination_state': s_name,
+                    'count': s_info['count'],
+                    'percentage': s_info['percentage']
+                })
+            df_dist = pd.DataFrame(dist_list)
+            df_dist.to_csv(out_path / "water_states_distribution.csv", index=False)
+            print(f"    Saved: water_states_distribution.csv")
+
     print("    Done saving raw data.\n")
 
 
@@ -1869,6 +2075,9 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     print("    Computing coordination numbers...")
     advanced_stats['coordination'] = compute_coordination_numbers(results)
     
+    print("    Computing detailed water coordination states (nDmA)...")
+    advanced_stats['water_states'] = compute_water_hbond_states(results, sampled_frames, detector)
+    
     print("    Computing degree distribution...")
     advanced_stats['degree'] = compute_degree_distribution(results)
     
@@ -1904,6 +2113,11 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     n_hbonds = [r['n_hbonds'] for r in results]
     print(f"    H-bonds: {np.mean(n_hbonds):.1f} +/- {np.std(n_hbonds):.1f}")
     print(f"    Coordination: {advanced_stats['coordination']['mean']:.2f} +/- {advanced_stats['coordination']['std']:.2f}")
+    if 'water_states' in advanced_stats and advanced_stats['water_states']['distribution']:
+        water_states_dist = advanced_stats['water_states']['distribution']
+        top_states = sorted(water_states_dist.items(), key=lambda x: x[1]['percentage'], reverse=True)[:3]
+        top_states_str = ", ".join(f"{state}: {info['percentage']:.1f}%" for state, info in top_states)
+        print(f"    Water States (top 3): {top_states_str}")
     print(f"    H-bond lifetime: {advanced_stats['lifetime']['mean']:.2f} fs")
     print(f"    Clustering coeff: {advanced_stats['clustering']['mean']:.3f}")
     print(f"    H-bond strength: Strong {advanced_stats['strength']['strong_pct']:.1f}%, "

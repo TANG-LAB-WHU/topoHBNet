@@ -4,6 +4,7 @@ from .dynamics import DynamicsAnalyzer
 from .visualization import TopologyVisualizer
 from .persistence_visualizer import plot_persistence_barcode, plot_persistence_diagram
 from .interfacial import InterfacialAnalyzer, InterfacialVisualizer, InterfacialAnalysisResult
+from .proton_dynamics import ProtonTransferProfiler, ProtonWireTracker, HodgeFlowDecomposer
 
 __all__ = [
     "DynamicsAnalyzer", 
@@ -13,4 +14,7 @@ __all__ = [
     "InterfacialAnalyzer",
     "InterfacialVisualizer",
     "InterfacialAnalysisResult",
+    "ProtonTransferProfiler",
+    "ProtonWireTracker",
+    "HodgeFlowDecomposer",
 ]

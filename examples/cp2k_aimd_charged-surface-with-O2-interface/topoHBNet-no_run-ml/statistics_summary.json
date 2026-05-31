@@ -1,0 +1,179 @@
+{
+  "n_frames_analyzed": 1001,
+  "basic_statistics": {
+    "hbond_count": {
+      "mean": 139.14685314685315,
+      "std": 9.67366697559193,
+      "min": 117,
+      "max": 155
+    },
+    "betti_0": {
+      "mean": 1.0709290709290709,
+      "std": 0.2567063260346534
+    },
+    "betti_1": {
+      "mean": 48.24075924075924,
+      "std": 7.083699473068593
+    },
+    "betti_2": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "geometry": {
+      "mean_distance_da": 2.877062889453919,
+      "std_distance_da": 0.1917391490827053,
+      "mean_angle_dha": 156.16958795731819,
+      "std_angle_dha": 13.505005482565297
+    }
+  },
+  "advanced_statistics": {
+    "coordination": {
+      "mean": 3.0956571987376096,
+      "std": 1.0440820749018207,
+      "distribution": {
+        "1": 6203,
+        "2": 20645,
+        "3": 27193,
+        "4": 30425,
+        "5": 5332,
+        "6": 190
+      }
+    },
+    "water_states": {
+      "0D1A": {
+        "count": 1971,
+        "percentage": 2.170083456279039
+      },
+      "0D2A": {
+        "count": 895,
+        "percentage": 0.9854006561997666
+      },
+      "0D3A": {
+        "count": 125,
+        "percentage": 0.13762578997203445
+      },
+      "1D0A": {
+        "count": 4232,
+        "percentage": 4.659458745293198
+      },
+      "1D1A": {
+        "count": 16953,
+        "percentage": 18.6653601391672
+      },
+      "1D2A": {
+        "count": 13971,
+        "percentage": 15.382159293594345
+      },
+      "1D3A": {
+        "count": 1691,
+        "percentage": 1.861801686741682
+      },
+      "1D4A": {
+        "count": 4,
+        "percentage": 0.004404025279105102
+      },
+      "2D0A": {
+        "count": 2797,
+        "percentage": 3.0795146764142425
+      },
+      "2D1A": {
+        "count": 13060,
+        "percentage": 14.379142536278158
+      },
+      "2D2A": {
+        "count": 27863,
+        "percentage": 30.677339087926363
+      },
+      "2D3A": {
+        "count": 4268,
+        "percentage": 4.699094972805144
+      },
+      "2D4A": {
+        "count": 65,
+        "percentage": 0.0715654107854579
+      },
+      "3D0A": {
+        "count": 37,
+        "percentage": 0.040737233831722196
+      },
+      "3D1A": {
+        "count": 871,
+        "percentage": 0.9589765045251359
+      },
+      "3D2A": {
+        "count": 1050,
+        "percentage": 1.1560566357650892
+      },
+      "3D3A": {
+        "count": 85,
+        "percentage": 0.09358553718098342
+      },
+      "4D1A": {
+        "count": 10,
+        "percentage": 0.011010063197762755
+      },
+      "4D2A": {
+        "count": 40,
+        "percentage": 0.04404025279105102
+      },
+      "free H2O": {
+        "count": 838,
+        "percentage": 0.9226432959725189
+      }
+    },
+    "degree": {
+      "mean": 3.0956571987376096,
+      "std": 1.0440820749018207,
+      "distribution": {
+        "1": 6203,
+        "2": 20645,
+        "3": 27193,
+        "4": 30425,
+        "5": 5332,
+        "6": 190
+      }
+    },
+    "lifetime": {
+      "mean_fs": 92.32824933687003,
+      "std_fs": 148.2429542534639,
+      "max_fs": 500.5
+    },
+    "clustering": {
+      "mean": 0.01752043515169442,
+      "std": 0.010707127693027948
+    },
+    "hbond_strength": {
+      "strong": 53660,
+      "moderate": 76610,
+      "weak": 9016,
+      "total": 139286,
+      "strong_pct": 38.5250491793863,
+      "moderate_pct": 55.00193845756214,
+      "weak_pct": 6.473012363051563
+    },
+    "persistent_homology": {
+      "available": true,
+      "frame_index": 500,
+      "total_frames": 1001,
+      "all_frames_analyzed": true,
+      "dynamics_summary": {
+        "total_persistence_H0": {
+          "mean": 427.8727581140863,
+          "std": 1.3360156630260722
+        },
+        "total_persistence_H1": {
+          "mean": 45.45670987565019,
+          "std": 2.494122546253806
+        },
+        "n_features_H0": {
+          "mean": 147.0,
+          "std": 0.0
+        },
+        "n_features_H1": {
+          "mean": 69.21678321678321,
+          "std": 2.6696125581715586
+        }
+      }
+    }
+  }
+}

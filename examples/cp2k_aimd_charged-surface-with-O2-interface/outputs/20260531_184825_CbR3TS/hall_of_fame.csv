@@ -1,0 +1,4 @@
+Complexity,Loss,Equation
+1,5.481797e-6,"0.004439705"
+3,3.202917e-6,"0.21845977 / betti_1"
+9,1.7889035e-6,"(betti_1 - (0.38389727 / euler_characteristic)) + (betti_1 * -1.0000805)"
