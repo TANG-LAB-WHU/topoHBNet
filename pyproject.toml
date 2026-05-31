@@ -32,16 +32,23 @@ classifiers = [
 
 dependencies = [
     # Core dependencies
-    "numpy>=1.26.0",
+    "numpy>=1.26.0,<2.0.0",
     "scipy>=1.11.3",
     "networkx>=2.6.0",
-    "matplotlib>=3.4.0",
+    
+    # Plotting & Visualization (Explicitly pinned to >=3.8.0 to ensure Python 3.12 wheel availability
+    # and prevent build isolation crashes with NumPy 2.0 headers during source compilation)
+    "matplotlib>=3.8.0",
     
     # TopoX Suite - Core
     "toponetx>=0.0.2",
 
     # ASE for unified trajectory parsing (LAMMPS, CP2K, XYZ, etc.)
     "ase>=3.22.0",
+
+    # Data manipulation (Explicitly pinned to >=2.1.0 to ensure Python 3.12 wheel availability
+    # and prevent build isolation crashes with NumPy 2.0 headers during source compilation)
+    "pandas>=2.1.0",
 ]
 
 [project.optional-dependencies]
@@ -72,6 +79,17 @@ persistence = [
     "gudhi>=3.7.0",
 ]
 
+# Automated scientific discovery (Symbolic Regression & Nonlinear Dynamics)
+# NOTE: PySINDy (>=2.0.0) requires numpy>=2.0, which strictly conflicts with the numpy<2.0.0
+# constraint required by the TopoX suite (karateclub/pygsp). Therefore, we pin PySINDy to 1.7.5
+# (compatible with NumPy 1.x) and setuptools<82.0.0 (to preserve the pkg_resources API required by it).
+discovery = [
+    "pysr>=1.0.0",
+    "pysindy==1.7.5",
+    "setuptools<82.0.0",
+    "sympy>=1.12",
+]
+
 # Development tools
 dev = [
     "pytest>=7.0.0",
@@ -83,7 +101,7 @@ dev = [
 
 # All optional features (except dev)
 all = [
-    "hbond-topology[embedding,learning,persistence]",
+    "hbond-topology[embedding,learning,persistence,discovery]",
 ]
 
 # Full installation including dev
