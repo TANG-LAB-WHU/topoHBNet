@@ -297,7 +297,7 @@ class InterfacialAnalyzer:
         return float(bin_centres[idx_cross])
 
     # ------------------------------------------------------------------
-    # Density profile (Step 63)
+    # Density profile
     # ------------------------------------------------------------------
 
     def compute_density_profile(
@@ -410,7 +410,7 @@ class InterfacialAnalyzer:
         return 4.0
 
     # ------------------------------------------------------------------
-    # Classify interfacial water (Step 63)
+    # Classify interfacial water
     # ------------------------------------------------------------------
 
     def classify_interfacial_water(
@@ -447,7 +447,7 @@ class InterfacialAnalyzer:
         return interfacial, bulk
 
     # ------------------------------------------------------------------
-    # Angle distributions (Step 64)
+    # Angle distributions
     # ------------------------------------------------------------------
 
     def compute_angle_distributions(
@@ -535,7 +535,7 @@ class InterfacialAnalyzer:
         return phi_centres, phi_dist, theta_centres, theta_dist
 
     # ------------------------------------------------------------------
-    # H-bond statistics (Step 65)
+    # H-bond statistics
     # ------------------------------------------------------------------
 
     def compute_hbond_statistics(
@@ -637,7 +637,7 @@ class InterfacialAnalyzer:
         step: int = 1,
     ) -> InterfacialAnalysisResult:
         """
-        Run the complete Protocol Steps 63-65 analysis.
+        Run the complete analysis.
 
         Parameters
         ----------
@@ -654,9 +654,9 @@ class InterfacialAnalyzer:
         if self.verbose:
             print(f"InterfacialAnalyzer: analysing {n} frames (mode={self.mode})")
 
-        # --- Step 63: Density profile ---
+        # --- Density profile ---
         if self.verbose:
-            print("\n[Step 63] Computing density profiles...")
+            print("\nComputing density profiles...")
         z_bins, density_O, density_H, density_sub, auto_cutoff = (
             self.compute_density_profile(selected)
         )
@@ -674,16 +674,16 @@ class InterfacialAnalyzer:
             len(self.classify_interfacial_water(f, cutoff)[0]) for f in selected
         ])
 
-        # --- Step 64: Angle distributions ---
+        # --- Angle distributions ---
         if self.verbose:
-            print("\n[Step 64] Computing angle distributions...")
+            print("\nComputing angle distributions...")
         phi_bins, phi_dist, theta_bins, theta_dist = (
             self.compute_angle_distributions(selected, cutoff)
         )
 
-        # --- Step 65: H-bond statistics ---
+        # --- H-bond statistics ---
         if self.verbose:
-            print("\n[Step 65] Computing H-bond statistics...")
+            print("\nComputing H-bond statistics...")
         hbonds_per_mol, bulk_ref = self.compute_hbond_statistics(selected, cutoff)
 
         if self.verbose:
@@ -830,7 +830,7 @@ class InterfacialVisualizer:
 
         ax.set_xlabel("ΔZ relative to surface (Å)", fontsize=12)
         ax.set_ylabel("Number density (atoms/ų)", fontsize=12)
-        ax.set_title("Interfacial Density Profile (Protocol Step 63)", fontsize=13)
+        ax.set_title("Interfacial Density Profile", fontsize=13)
         ax.legend(fontsize=9)
         ax.set_xlim(-5, 15)
         fig.tight_layout()
@@ -850,7 +850,7 @@ class InterfacialVisualizer:
                 color="steelblue", alpha=0.8, edgecolor="navy", linewidth=0.3)
         ax1.set_xlabel("φ (dipole bisector angle, °)", fontsize=12)
         ax1.set_ylabel("Probability density", fontsize=12)
-        ax1.set_title("Dipole Orientation (Step 64)", fontsize=13)
+        ax1.set_title("Dipole Orientation", fontsize=13)
         ax1.set_xlim(0, 180)
 
         ax2.bar(result.theta_bins, result.theta_distribution,
@@ -858,7 +858,7 @@ class InterfacialVisualizer:
                 color="coral", alpha=0.8, edgecolor="darkred", linewidth=0.3)
         ax2.set_xlabel("θ (O-H bond angle, °)", fontsize=12)
         ax2.set_ylabel("Probability density", fontsize=12)
-        ax2.set_title("O-H Bond Orientation (Step 64)", fontsize=13)
+        ax2.set_title("O-H Bond Orientation", fontsize=13)
         ax2.set_xlim(0, 180)
 
         fig.tight_layout()
@@ -893,7 +893,7 @@ class InterfacialVisualizer:
         ax2.set_ylabel("N interfacial water", fontsize=12, color=color2)
         ax2.tick_params(axis="y", labelcolor=color2)
 
-        ax1.set_title("H-bond Evolution at Interface (Protocol Step 65)", fontsize=13)
+        ax1.set_title("H-bond Evolution at Interface", fontsize=13)
         fig.tight_layout()
         fig.savefig(filepath)
         plt.close(fig)
