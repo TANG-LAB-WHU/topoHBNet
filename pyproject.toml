@@ -46,6 +46,9 @@ dependencies = [
     # ASE for unified trajectory parsing (LAMMPS, CP2K, XYZ, etc.)
     "ase>=3.22.0",
 
+    # MDAnalysis for extensive molecular dynamics trajectory parsing and analysis
+    "MDAnalysis",
+
     # Data manipulation (Explicitly pinned to >=2.1.0 to ensure Python 3.12 wheel availability
     # and prevent build isolation crashes with NumPy 2.0 headers during source compilation)
     "pandas>=2.1.0",
