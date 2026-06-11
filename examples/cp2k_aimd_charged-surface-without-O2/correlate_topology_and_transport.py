@@ -351,10 +351,10 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
         run_output_dir = output_dir / "pysr_runs" / f"run_{run_idx + 1}_{seed}"
         run_output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Override tempdir and equation_file inside pysr_kwargs
+        # Override tempdir and temp_equation_file inside pysr_kwargs
         run_kwargs = pysr_kwargs.copy()
         run_kwargs["tempdir"] = str(run_output_dir)
-        run_kwargs["equation_file"] = str(run_output_dir / "hall_of_fame.csv")
+        run_kwargs["temp_equation_file"] = str(run_output_dir / "hall_of_fame.csv")
         
         regressor = SymbolicRegressor(niterations=niterations, random_state=seed, **run_kwargs)
         try:

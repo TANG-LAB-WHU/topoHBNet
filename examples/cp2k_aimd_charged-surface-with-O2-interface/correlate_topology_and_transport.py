@@ -321,7 +321,6 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
         from hbond_topology.learning.discovery import SymbolicRegressor, HAS_PYSR
     except ImportError:
         # Fallback if hbond_topology is not in pythonpath, try adding parent dir
-        import sys
         sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
         try:
             from hbond_topology.learning.discovery import SymbolicRegressor, HAS_PYSR
@@ -351,12 +350,30 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
         run_output_dir = output_dir / "pysr_runs" / f"run_{run_idx + 1}_{seed}"
         run_output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Override tempdir and equation_file inside pysr_kwargs
+        # Override tempdir and temp_equation_file inside pysr_kwargs
         run_kwargs = pysr_kwargs.copy()
         run_kwargs["tempdir"] = str(run_output_dir)
-        run_kwargs["equation_file"] = str(run_output_dir / "hall_of_fame.csv")
+        run_kwargs["temp_equation_file"] = str(run_output_dir / "hall_of_fame.csv")
+        run_kwargs["delete_tempfiles"] = False  # Prevent PySR from wiping the directory
         
         regressor = SymbolicRegressor(niterations=niterations, random_state=seed, **run_kwargs)
+        
+        class TeeLogger:
+            def __init__(self, filename):
+                self.terminal = sys.stdout
+                self.log = open(filename, 'w', encoding='utf-8')
+            def write(self, message):
+                self.terminal.write(message)
+                self.log.write(message)
+            def flush(self):
+                self.terminal.flush()
+                self.log.flush()
+                
+        log_path = run_output_dir / "pysr_evolution.log"
+        logger = TeeLogger(log_path)
+        old_stdout = sys.stdout
+        sys.stdout = logger
+        
         try:
             regressor.fit(X, y, feature_names=topo_cols)
             best_eq = regressor.get_best_equation()
@@ -373,6 +390,9 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
             print(f"  Run {run_idx + 1} Best Equation: {best_eq_str}")
         except Exception as e:
             print(f"  [Error] PySR Run {run_idx + 1} failed: {e}")
+        finally:
+            sys.stdout = old_stdout
+            logger.log.close()
 
     if not all_runs_data:
         print("  [Error] All PySR runs failed. Cannot generate report.")
