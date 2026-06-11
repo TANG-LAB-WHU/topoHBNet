@@ -1,0 +1,175 @@
+{
+  "n_frames_analyzed": 3001,
+  "basic_statistics": {
+    "hbond_count": {
+      "mean": 154.78673775408197,
+      "std": 7.518355017343569,
+      "min": 126,
+      "max": 173
+    },
+    "betti_0": {
+      "mean": 1.003998667110963,
+      "std": 0.0631084603860585
+    },
+    "betti_1": {
+      "mean": 61.663445518160614,
+      "std": 5.8152747872160315
+    },
+    "betti_2": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "geometry": {
+      "mean_distance_da": 2.840785850160974,
+      "std_distance_da": 0.17521264708399842,
+      "mean_angle_dha": 158.28894032058867,
+      "std_angle_dha": 12.67923975323662
+    }
+  },
+  "advanced_statistics": {
+    "coordination": {
+      "mean": 3.3663922426912873,
+      "std": 0.9322890469955131,
+      "distribution": {
+        "1": 8687,
+        "2": 37319,
+        "3": 97956,
+        "4": 108935,
+        "5": 22353,
+        "6": 722
+      }
+    },
+    "water_states": {
+      "0D1A": {
+        "count": 3940,
+        "percentage": 1.4222337733594679
+      },
+      "0D2A": {
+        "count": 2427,
+        "percentage": 0.8760815654678752
+      },
+      "0D3A": {
+        "count": 245,
+        "percentage": 0.08843839453631208
+      },
+      "1D0A": {
+        "count": 4747,
+        "percentage": 1.713539015770912
+      },
+      "1D1A": {
+        "count": 29615,
+        "percentage": 10.69021654772605
+      },
+      "1D2A": {
+        "count": 42560,
+        "percentage": 15.363012536593642
+      },
+      "1D3A": {
+        "count": 3912,
+        "percentage": 1.4121265282696036
+      },
+      "1D4A": {
+        "count": 22,
+        "percentage": 0.007941406856321902
+      },
+      "2D0A": {
+        "count": 5277,
+        "percentage": 1.9048547264004851
+      },
+      "2D1A": {
+        "count": 54943,
+        "percentage": 19.832941677586103
+      },
+      "2D2A": {
+        "count": 102601,
+        "percentage": 37.03619476661288
+      },
+      "2D3A": {
+        "count": 19033,
+        "percentage": 6.8703998498352155
+      },
+      "2D4A": {
+        "count": 108,
+        "percentage": 0.038985088203762064
+      },
+      "3D0A": {
+        "count": 208,
+        "percentage": 0.07508239209613433
+      },
+      "3D1A": {
+        "count": 2422,
+        "percentage": 0.8742767002732565
+      },
+      "3D2A": {
+        "count": 3298,
+        "percentage": 1.1904890823704377
+      },
+      "3D3A": {
+        "count": 505,
+        "percentage": 0.18229138465648
+      },
+      "4D2A": {
+        "count": 109,
+        "percentage": 0.03934606124268578
+      },
+      "free H2O": {
+        "count": 1057,
+        "percentage": 0.381548502142375
+      }
+    },
+    "degree": {
+      "mean": 3.3663922426912873,
+      "std": 0.9322890469955131,
+      "distribution": {
+        "1": 8687,
+        "2": 37319,
+        "3": 97956,
+        "4": 108935,
+        "5": 22353,
+        "6": 722
+      }
+    },
+    "lifetime": {
+      "mean_fs": 202.9549825174825,
+      "std_fs": 388.34518692259303,
+      "max_fs": 1500.5
+    },
+    "clustering": {
+      "mean": 0.015183500169218976,
+      "std": 0.010715081390143957
+    },
+    "hbond_strength": {
+      "strong": 214157,
+      "moderate": 231700,
+      "weak": 18658,
+      "total": 464515,
+      "strong_pct": 46.10335511232145,
+      "moderate_pct": 49.879982347179315,
+      "weak_pct": 4.01666254049923
+    },
+    "persistent_homology": {
+      "available": true,
+      "frame_index": 1500,
+      "total_frames": 3001,
+      "all_frames_analyzed": true,
+      "dynamics_summary": {
+        "total_persistence_H0": {
+          "mean": 417.0567078540033,
+          "std": 4.62012999574787
+        },
+        "total_persistence_H1": {
+          "mean": 52.95887414977684,
+          "std": 3.9012471895184455
+        },
+        "n_features_H0": {
+          "mean": 145.0,
+          "std": 0.0
+        },
+        "n_features_H1": {
+          "mean": 69.33655448183939,
+          "std": 2.823125332953808
+        }
+      }
+    }
+  }
+}
