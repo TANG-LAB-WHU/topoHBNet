@@ -68,6 +68,8 @@ results_*/
 *.cell
 *.extxyz
 *.ener
+ml_similarity_matrix.csv
+aimd_energetics_combined.svg
 
 
 # OS
