@@ -1,4 +1,4 @@
-# CP2K AIMD: Water/Substrate Interface (No Field)
+# CP2K AIMD: Charged Surface with O2 Interface
 
 This directory contains a complete workflow for analyzing an ab initio molecular dynamics (AIMD) trajectory of water on a substrate (e.g., Si/C surface) using the `topoHBNet` package.
 
@@ -124,7 +124,7 @@ Bridges high-dimensional topological representations from machine learning with 
   - **Physics-Guided Symbolic Regression (`--run-pysr`)**: Automatically runs PySR (Symbolic Regression via Genetic Programming) to discover explicit, publishable analytical physical laws. 
     > [!IMPORTANT]
     > **Physics Guidance**: In this discovery step, abstract neural network coordinates (`PC1`, `PC2`) are automatically filtered out. Restricting the feature space strictly to physically interpretable topological invariants ($\beta_1$, Euler, $n_{\text{hbonds}}$, etc.) ensures that the discovered mathematical equation has well-defined physical units and clear mechanistic interpretability.
-- **Primary Output**: `topology_transport_correlation_results/` (contains correlation heatmaps, state-profiling bar charts, topological state clustering plots, feature importance horizontal bars, aligned CSV/JSON datasets, and `discovered_physical_law.txt` when `--run-pysr` is enabled).
+- **Primary Output**: `topology_transport_correlation_results/` (contains correlation heatmaps, state-profiling bar charts, topological state clustering plots, feature importance horizontal bars, aligned CSV/JSON datasets, and `discovered_physical_law.md` when `--run-pysr` is enabled).
 - **Usage**:
   - **To generate standard correlation and Random Forest regression:**
     ```bash
@@ -151,6 +151,6 @@ The scripts expect the following files (defaults are typically set for this dire
 - `visualization_aimd_energetics/`: Detailed README and results for energetics.
 - `interfacial_analysis_results/`: Results and visualization of the interfacial water analysis.
 - `proton_transfer_results/`: Results and visualizations for proton transfer and Hodge flow dynamics.
-- `topology_transport_correlation_results/`: Cross-correlation heatmaps, state-profiling, topological feature importance datasets, and discovered analytical physical laws (`discovered_physical_law.txt`).
+- `topology_transport_correlation_results/`: Cross-correlation heatmaps, state-profiling, topological feature importance datasets, and discovered analytical physical laws (`discovered_physical_law.md`).
 - `topoHBNet-run-ml/`: Main topological and machine learning output.
 - `topoHBNet-no_run-ml/`: Main topological output.
