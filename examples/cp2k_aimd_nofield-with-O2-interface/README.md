@@ -1,4 +1,4 @@
-# CP2K AIMD: Water/Substrate Interface (No Field)
+# CP2K AIMD: No Field with O2 Interface
 
 This directory contains a complete workflow for analyzing an ab initio molecular dynamics (AIMD) trajectory of water on a substrate (e.g., Si/C surface) using the `topoHBNet` package.
 
