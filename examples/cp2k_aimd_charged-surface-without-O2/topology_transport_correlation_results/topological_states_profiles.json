@@ -1,0 +1,23 @@
+{
+    "0": {
+        "LBHB_Fraction": 0.002701632947032757,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999806118973,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 158.1271102284012
+    },
+    "1": {
+        "LBHB_Fraction": 0.002860088940703256,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999811728237,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 157.09532924961715
+    },
+    "2": {
+        "LBHB_Fraction": 0.0028517684664639952,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999808699371,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 157.34256926952142
+    }
+}
