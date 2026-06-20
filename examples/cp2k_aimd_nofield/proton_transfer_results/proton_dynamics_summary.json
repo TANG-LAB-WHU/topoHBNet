@@ -1,7 +1,7 @@
 {
-    "mean_lbhb_fraction": 0.0017632811365223754,
-    "mean_wire_length": 3.4510684110329577,
-    "mean_hodge_gradient": 99.99999851984703,
+    "mean_lbhb_fraction": 0.0015944233696546931,
+    "mean_wire_length": 5.597805683289929,
+    "mean_hodge_gradient": 99.99999843024544,
     "mean_hodge_curl": 0.0,
-    "mean_hodge_harmonic": 0.003668256943005419
+    "mean_hodge_harmonic": 0.003733023113648725
 }
