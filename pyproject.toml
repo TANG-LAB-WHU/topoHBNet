@@ -52,6 +52,9 @@ dependencies = [
     # Data manipulation (Explicitly pinned to >=2.1.0 to ensure Python 3.12 wheel availability
     # and prevent build isolation crashes with NumPy 2.0 headers during source compilation)
     "pandas>=2.1.0",
+
+    # Automated equilibration detection (Chodera 2016)
+    "pymbar>=3.0.5",
 ]
 
 [project.optional-dependencies]
