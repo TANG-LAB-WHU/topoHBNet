@@ -373,17 +373,17 @@ def main():
     }.get(getattr(args, "equil_observable", "potential_energy"), "potential_au")
     
     ts_signal = np.array(data[obs_key])
-    t0, g, Neff, actual_obs, _ = equilibration_utils.resolve_equilibration_start(
+    t0_raw, g, Neff, actual_obs, _ = equilibration_utils.resolve_equilibration_start(
         args, fallback_timeseries=ts_signal, fallback_observable=getattr(args, "equil_observable", "potential_energy"),
         sample_interval=1, base_dir=__import__("pathlib").Path(script_dir)
     )
     equilibration_utils.generate_equilibration_report_and_plot(
-        t0, g, Neff, ts_signal, np.array(data["time_fs"]), actual_obs, output_dir
+        t0_raw, g, Neff, ts_signal, np.array(data["time_fs"]), actual_obs, output_dir
     )
-    if t0 > 0:
-        print(f"    [Equilibration] Discarding first {t0} frames as equilibration phase.")
+    if t0_raw > 0:
+        print(f"    [Equilibration] Discarding first {t0_raw} frames as equilibration phase.")
         for k in data:
-            data[k] = data[k][t0:]
+            data[k] = data[k][t0_raw:]
         print(f"    [Equilibration] Production phase frames: {len(data['step'])}  |  Time range: {data['time_fs'][0]:.1f} – {data['time_fs'][-1]:.1f} fs\n")
 
     # Apply style

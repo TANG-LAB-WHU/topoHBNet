@@ -167,24 +167,28 @@ def main():
     frames = parser.parse()
     print(f"    Total frames loaded: {len(frames)}")
 
-    # Equilibration detection and cutoff
+    # Equilibration detection — cut BEFORE analysis
     import equilibration_utils
     import numpy as np
     base_dir = traj_path.parent
-    fallback_ts = np.array([len(f.positions) for f in frames[::args.sample_interval]])
-    t0, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
-        args, fallback_timeseries=fallback_ts, fallback_observable="n_atoms",
+    t0_raw, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
+        args, fallback_timeseries=None, fallback_observable="n_atoms",
         sample_interval=args.sample_interval, base_dir=base_dir
     )
-    time_arr_fs = np.arange(len(ts_signal)) * args.sample_interval * args.timestep
+    if ts_signal is not None and len(ts_signal) > 0:
+        if actual_obs in {"potential_energy", "temperature", "kinetic_energy", "conserved_quantity"}:
+            time_arr_fs = np.arange(len(ts_signal)) * args.timestep
+        else:
+            time_arr_fs = np.arange(len(ts_signal)) * args.sample_interval * args.timestep
+    else:
+        time_arr_fs = np.array([])
     equilibration_utils.generate_equilibration_report_and_plot(
-        t0, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
+        t0_raw, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
     )
-    if t0 > 0:
-        cutoff_full_frames = t0 * args.sample_interval
-        print(f"    [Equilibration] Discarding first {cutoff_full_frames} raw frames ({t0} sampled frames) as equilibration phase.")
-        frames = frames[cutoff_full_frames:]
-        print(f"    [Equilibration] Production phase raw frames: {len(frames)}\n")
+    if t0_raw > 0:
+        print(f"    [Equilibration] Discarding first {t0_raw} raw frames as equilibration phase.")
+        frames = frames[t0_raw:]
+        print(f"    [Equilibration] Production phase raw frames: {len(frames)}")
 
     # 2. Run analysis
     print("\n[2/3] Initializing InterfacialAnalyzer and running pipeline...")
@@ -222,10 +226,12 @@ def main():
     visualizer = InterfacialVisualizer(dpi=args.dpi)
     # The analyzer computes stride dynamics, but timestep needs to be scaled by sample_interval
     effective_timestep = args.timestep * args.sample_interval
+    start_time_fs = t0_raw * args.timestep
     visualizer.plot_all(
         result,
         save_dir=output_dir,
         timestep_fs=effective_timestep,
+        start_time_fs=start_time_fs,
     )
 
     print("\n" + "=" * 70)

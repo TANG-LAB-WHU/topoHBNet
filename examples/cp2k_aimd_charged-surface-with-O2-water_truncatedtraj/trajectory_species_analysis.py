@@ -386,6 +386,7 @@ def run_analysis(
     r_oo: float = 1.6,
     r_hh: float = 0.9,
     stride: int = 1,
+    start_frame: int = 0,
     timestep: Optional[float] = None,
     ho_only: bool = True,
     verbose: bool = True,
@@ -444,7 +445,7 @@ def run_analysis(
     # Collect results
     records = []
     all_species = set()
-    frames_to_analyze = range(0, n_frames_total, stride)
+    frames_to_analyze = range(start_frame, n_frames_total, stride)
     n_analyze = len(frames_to_analyze)
 
     for count, frame_idx in enumerate(frames_to_analyze):
@@ -757,7 +758,43 @@ def main():
         print(f"  Output:      {output_dir}")
         print()
 
-    # Run analysis
+    # Equilibration detection — cut BEFORE analysis
+    import equilibration_utils
+    base_dir = Path(args.xyz).parent
+    ener_path = base_dir / getattr(args, "equil_ener_file", "trajectory.ener")
+    
+    # We want to do a fast fallback if ener is not available.
+    if not ener_path.exists() and getattr(args, "equil_auto", False):
+        if not args.quiet:
+            print("    [Equilibration] Computing fallback timeseries (n_atoms) from MDAnalysis metadata...")
+        # fallback by simply tracking n_atoms in the box
+        import MDAnalysis as mda
+        u_temp = mda.Universe(args.xyz)
+        fallback_ts = np.array([len(u_temp.atoms) for _ in range(0, u_temp.trajectory.n_frames, args.stride)])
+        fallback_obs = "n_atoms"
+    else:
+        fallback_ts = None
+        fallback_obs = "n_atoms"
+
+    t0_raw, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
+        args, fallback_timeseries=fallback_ts, fallback_observable=fallback_obs,
+        sample_interval=args.stride, base_dir=base_dir
+    )
+    if ts_signal is not None and len(ts_signal) > 0:
+        if actual_obs in {"potential_energy", "temperature", "kinetic_energy", "conserved_quantity"}:
+            time_arr_fs = np.arange(len(ts_signal)) * (args.timestep or 0.5)
+        else:
+            time_arr_fs = np.arange(len(ts_signal)) * args.stride * (args.timestep or 0.5)
+    else:
+        time_arr_fs = np.array([])
+    equilibration_utils.generate_equilibration_report_and_plot(
+        t0_raw, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
+    )
+    if t0_raw > 0:
+        if not args.quiet:
+            print(f"    [Equilibration] Discarding first {t0_raw} raw frames as equilibration phase.")
+
+    # Run analysis on production frames only
     df = run_analysis(
         xyz_path=args.xyz,
         cell=cell,
@@ -765,29 +802,13 @@ def main():
         r_oo=args.roo,
         r_hh=args.rhh,
         stride=args.stride,
+        start_frame=t0_raw,
         timestep=args.timestep,
         ho_only=not args.include_substrate,
         verbose=not args.quiet,
     )
-
-    # Equilibration detection and cutoff
-    import equilibration_utils
-    base_dir = Path(args.xyz).parent
-    fallback_obs = "H2O" if "H2O" in df.columns else df.columns[-1] if len(df.columns) > 3 else "none"
-    fallback_ts = df[fallback_obs].values if fallback_obs != "none" else np.array([])
-    t0, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
-        args, fallback_timeseries=fallback_ts, fallback_observable=fallback_obs,
-        sample_interval=args.stride, base_dir=base_dir
-    )
-    equilibration_utils.generate_equilibration_report_and_plot(
-        t0, g, Neff, ts_signal, df["time_fs"].values if len(df) == len(ts_signal) else np.arange(len(ts_signal)) * args.stride * (args.timestep or 0.5), actual_obs, output_dir
-    )
-    if t0 > 0:
-        if not args.quiet:
-            print(f"    [Equilibration] Discarding first {t0} sampled frames as equilibration phase.")
-        df = df.iloc[t0:].copy()
-        if not args.quiet:
-            print(f"    [Equilibration] Production phase frames: {len(df)}\n")
+    if not args.quiet:
+        print(f"    [Equilibration] Production phase frames analyzed: {len(df)}\n")
 
     # Save CSV
     csv_path = output_dir / "species_counts.csv"

@@ -34,7 +34,8 @@ def add_equilibration_args(parser: argparse.ArgumentParser) -> argparse.Argument
         "--equil-start-frame",
         type=int,
         default=None,
-        help="Explicitly specify the start frame for production phase (overrides --equil-auto)."
+        help="Explicitly specify the production start frame in the raw trajectory "
+             "(0-based index, before any --sample-interval striding). Overrides --equil-auto."
     )
     group.add_argument(
         "--equil-observable",
@@ -108,15 +109,30 @@ def parse_ener_file(ener_path: Path, observable_name: str):
 
 def resolve_equilibration_start(args, fallback_timeseries=None, fallback_observable=None, sample_interval=1, base_dir=Path(".")):
     """
-    Determine t0 cutoff frame index, g, Neff, actual_observable, and the timeseries used.
-    Handles ener file loading, downsampling matching, and smart fallback.
+    Determine equilibration cutoff and return production-phase parameters.
+
+    Returns
+    -------
+    t0_raw : int
+        Cutoff index in the RAW (original) trajectory frame space (0-based).
+        All callers should use ``frames = frames[t0_raw:]`` on the raw frame list
+        BEFORE any sample-interval striding.
+    g : float
+        Statistical inefficiency.
+    Neff : float
+        Effective number of independent samples.
+    actual_observable : str
+        Name of the observable actually used for detection.
+    timeseries : np.ndarray
+        The timeseries that was analyzed.
     """
-    # 1. Manual override
+    # 1. Manual override — user specifies raw frame index directly
     if getattr(args, "equil_start_frame", None) is not None:
-        t0 = args.equil_start_frame
+        t0_raw = args.equil_start_frame
         actual_obs = "manual_override"
         ts = fallback_timeseries if fallback_timeseries is not None else np.array([])
-        return t0, 1.0, len(ts) - t0 if len(ts) > t0 else 0, actual_obs, ts
+        neff = max(0, len(ts) - t0_raw // max(1, sample_interval)) if len(ts) > 0 else 0
+        return t0_raw, 1.0, neff, actual_obs, ts
 
     # 2. If auto is not enabled, return 0
     if not getattr(args, "equil_auto", False):
@@ -135,24 +151,31 @@ def resolve_equilibration_start(args, fallback_timeseries=None, fallback_observa
         if ener_ts is not None and len(ener_ts) > 0:
             print(f"    [Equilibration] Running automated detection using {observable} from {ener_path}...")
             t0_ener, g, Neff = detect_equilibration_auto(ener_ts)
-            # Adjust for sample_interval if this script uses sampled frames
-            t0 = t0_ener // sample_interval
-            print(f"    [Equilibration] Detected t0_ener = {t0_ener} -> script t0 = {t0} (sample_interval={sample_interval})")
-            return t0, g, Neff, observable, ener_ts
+            # .ener file has one line per raw frame, so t0_ener IS the raw frame index
+            t0_raw = t0_ener
+            print(f"    [Equilibration] Detected t0_raw = {t0_raw} (raw frame index, sample_interval={sample_interval})")
+            return t0_raw, g, Neff, observable, ener_ts
         else:
             print(f"    [Equilibration Warning] {observable} requested but {ener_path} not found or invalid.")
             if fallback_timeseries is not None and fallback_observable is not None:
                 print(f"    [Equilibration] Smart Fallback: using script native observable '{fallback_observable}'.")
-                t0, g, Neff = detect_equilibration_auto(np.array(fallback_timeseries))
-                return t0, g, Neff, fallback_observable, np.array(fallback_timeseries)
+                t0_sampled, g, Neff = detect_equilibration_auto(np.array(fallback_timeseries))
+                # fallback_timeseries is sampled (one entry per sample_interval frames)
+                # so map back to raw frame space
+                t0_raw = t0_sampled * sample_interval
+                print(f"    [Equilibration] Detected t0_sampled = {t0_sampled} -> t0_raw = {t0_raw} (sample_interval={sample_interval})")
+                return t0_raw, g, Neff, fallback_observable, np.array(fallback_timeseries)
             else:
                 return 0, 1.0, 0, "none", np.array([])
     else:
         # Non-energetic observable requested (e.g. n_hbonds, H2O_count)
         if fallback_timeseries is not None:
             print(f"    [Equilibration] Running automated detection using requested observable '{observable}'...")
-            t0, g, Neff = detect_equilibration_auto(np.array(fallback_timeseries))
-            return t0, g, Neff, observable, np.array(fallback_timeseries)
+            t0_sampled, g, Neff = detect_equilibration_auto(np.array(fallback_timeseries))
+            # fallback_timeseries is sampled, map back to raw frame space
+            t0_raw = t0_sampled * sample_interval
+            print(f"    [Equilibration] Detected t0_sampled = {t0_sampled} -> t0_raw = {t0_raw} (sample_interval={sample_interval})")
+            return t0_raw, g, Neff, observable, np.array(fallback_timeseries)
         else:
             return 0, 1.0, 0, "none", np.array([])
 
@@ -166,7 +189,7 @@ def generate_equilibration_report_and_plot(t0, g, Neff, timeseries, time_fs_arr,
     
     # Save JSON report
     report = {
-        "t0_cutoff_index": int(t0),
+        "t0_raw_frame_index": int(t0),
         "statistical_inefficiency_g": float(g),
         "effective_independent_samples_Neff": float(Neff),
         "actual_observable": observable_name

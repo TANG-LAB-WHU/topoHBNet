@@ -513,18 +513,25 @@ def main():
     import equilibration_utils
     base_dir = topo_dir.parent
     fallback_ts = df["n_hbonds"].values if "n_hbonds" in df.columns else np.array([])
-    t0, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
+    t0_raw, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
         args, fallback_timeseries=fallback_ts, fallback_observable="n_hbonds",
         sample_interval=1, base_dir=base_dir
     )
-    time_arr_fs = np.arange(len(ts_signal)) * 0.5
+    if ts_signal is not None and len(ts_signal) > 0:
+        time_arr_fs = np.arange(len(ts_signal)) * 0.5
+    else:
+        time_arr_fs = np.array([])
     equilibration_utils.generate_equilibration_report_and_plot(
-        t0, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
+        t0_raw, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
     )
-    if t0 > 0:
-        cutoff_time_fs = t0 * 0.5
+    if t0_raw > 0:
+        if len(df) >= 2:
+            dt_fs = df["Time_fs"].diff().median()
+        else:
+            dt_fs = 0.5
+        cutoff_time_fs = t0_raw * dt_fs
         if df["Time_fs"].min() < cutoff_time_fs:
-            print(f"    [Equilibration] Filtering merged dataset to include only Time_fs >= {cutoff_time_fs} fs (t0={t0}).")
+            print(f"    [Equilibration] Filtering merged dataset to include only Time_fs >= {cutoff_time_fs} fs (t0_raw={t0_raw}).")
             df = df[df["Time_fs"] >= cutoff_time_fs].copy()
             print(f"    [Equilibration] Production phase frames in merged dataset: {len(df)}\n")
         else:

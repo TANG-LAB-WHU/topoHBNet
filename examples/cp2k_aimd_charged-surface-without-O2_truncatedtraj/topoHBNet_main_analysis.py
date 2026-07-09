@@ -1791,7 +1791,7 @@ def save_raw_data(results: List[Dict], advanced_stats: Dict, ml_results: Optiona
 
     out_path = Path(output_dir_raw)
     out_path.mkdir(parents=True, exist_ok=True)
-    print(f"\n[6.5] Saving raw data to CSV in {out_path.resolve()}...")
+    print(f"\n[7.5] Saving raw data to CSV in {out_path.resolve()}...")
 
     # 1. H-bond Dynamics & Topology (Time Series)
     # Extract time series data
@@ -2033,8 +2033,41 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     unique_elements = np.unique(frames[0].symbols)
     print(f"    Elements: {', '.join(unique_elements)}")
     
+    # Equilibration detection — cut BEFORE analysis
+    import equilibration_utils
+    sample_interval = args.sample_interval
+    base_dir = Path(__file__).parent
+
+    print("\n[2] Equilibration detection (cut before analysis)...")
+    t0_raw, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
+        args, fallback_timeseries=None, fallback_observable="n_hbonds",
+        sample_interval=sample_interval, base_dir=base_dir
+    )
+
+    # Generate equilibration diagnostic report and plot
+    if ts_signal is not None and len(ts_signal) > 0:
+        # For .ener-based detection, time_arr is per raw frame
+        if actual_obs in {"potential_energy", "temperature", "kinetic_energy", "conserved_quantity"}:
+            time_arr_fs = np.arange(len(ts_signal)) * args.timestep
+        else:
+            time_arr_fs = np.arange(len(ts_signal)) * sample_interval * args.timestep
+    else:
+        time_arr_fs = np.array([])
+    equilibration_utils.generate_equilibration_report_and_plot(
+        t0_raw, g, Neff, ts_signal, time_arr_fs,
+        actual_obs if actual_obs != "potential_energy" else "potential_energy", output_dir
+    )
+
+    # Trim equilibration frames from raw trajectory
+    if t0_raw > 0:
+        print(f"    [Equilibration] Discarding first {t0_raw} raw frames as equilibration phase.")
+        frames = frames[t0_raw:]
+        print(f"    [Equilibration] Production phase raw frames: {len(frames)}")
+    else:
+        print(f"    [Equilibration] No equilibration trimming needed (t0_raw=0).")
+    
     # Initialize analyzers
-    print("\n[2] Initializing analyzers...")
+    print("\n[3] Initializing analyzers...")
     detector = HBondDetector(
         r_da_max=args.r_da_max,
         r_ha_max=args.r_ha_max,
@@ -2045,16 +2078,16 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     builder = HBondComplexBuilder()
     invariants = TopologicalInvariants()
     
-    # Analyze trajectory
-    sample_interval = args.sample_interval
-    print(f"\n[3] Analyzing trajectory (every {sample_interval} frames)...")
+    # Analyze production trajectory only
+    print(f"\n[4] Analyzing production trajectory (every {sample_interval} frames)...")
     sampled_frames = frames[::sample_interval]
     results = []
     sc_list = [] if args.run_ml else None
     
     for i, frame in enumerate(sampled_frames):
         result = analyze_frame(frame, detector, builder, invariants)
-        result['timestep'] = i * sample_interval
+        # timestep reflects global frame index (including equilibration offset)
+        result['timestep'] = t0_raw + i * sample_interval
         results.append(result)
         
         if args.run_ml:
@@ -2068,29 +2101,10 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
         if (i + 1) % 50 == 0:
             print(f"    Processed {i + 1}/{len(sampled_frames)} frames...")
     
-    print(f"    Completed basic analysis of {len(results)} frames")
-    
-    # Equilibration detection and cutoff
-    import equilibration_utils
-    n_hbonds_ts = np.array([r['n_hbonds'] for r in results])
-    t0, g, Neff, actual_obs, _ = equilibration_utils.resolve_equilibration_start(
-        args, fallback_timeseries=n_hbonds_ts, fallback_observable="n_hbonds",
-        sample_interval=args.sample_interval, base_dir=__import__("pathlib").Path(output_dir).parent
-    )
-    time_arr_fs = np.arange(len(n_hbonds_ts)) * args.sample_interval * args.timestep
-    equilibration_utils.generate_equilibration_report_and_plot(
-        t0, g, Neff, n_hbonds_ts, time_arr_fs, actual_obs if actual_obs != "potential_energy" else "n_hbonds", output_dir
-    )
-    if t0 > 0:
-        print(f"    [Equilibration] Discarding first {t0} sampled frames as equilibration phase.")
-        results = results[t0:]
-        sampled_frames = sampled_frames[t0:]
-        if sc_list is not None:
-            sc_list = sc_list[t0:]
-        print(f"    [Equilibration] Production phase frames for advanced analysis: {len(results)}\n")
+    print(f"    Completed analysis of {len(results)} production frames")
 
     # Advanced analysis
-    print("\n[4] Running advanced analysis...")
+    print("\n[5] Running advanced analysis...")
     advanced_stats = {}
     
     print("    Computing coordination numbers...")
@@ -2130,7 +2144,7 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     )
     
     # Print summary statistics
-    print("\n[5] Summary Statistics:")
+    print("\n[6] Summary Statistics:")
     n_hbonds = [r['n_hbonds'] for r in results]
     print(f"    H-bonds: {np.mean(n_hbonds):.1f} +/- {np.std(n_hbonds):.1f}")
     print(f"    Coordination: {advanced_stats['coordination']['mean']:.2f} +/- {advanced_stats['coordination']['std']:.2f}")
@@ -2148,12 +2162,12 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     # ML Analysis
     ml_results = {}
     if args.run_ml:
-        print("\n[5.5] Running Topological Machine Learning analysis...")
+        print("\n[6.5] Running Topological Machine Learning analysis...")
         ml_results = perform_topological_ml_analysis(sc_list, args.ml_dim)
         generate_ml_plots(ml_results, output_dir, args.dpi, args.timestep, args.sample_interval)
     
     # Save results
-    print("\n[6] Saving results...")
+    print("\n[7] Saving results...")
     save_results(results, advanced_stats, output_dir, ml_results if args.run_ml else None)
     
     if args.output_dir_rawdata:
@@ -2164,7 +2178,7 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
                      raw_dir, args.timestep, args.sample_interval)
     
     # Generate plots
-    print("\n[7] Generating plots...")
+    print("\n[8] Generating plots...")
     try:
         generate_basic_plots(results, output_dir, args.timestep, args.dpi)
         generate_advanced_plots(results, sampled_frames, advanced_stats, output_dir, 

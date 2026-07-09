@@ -748,6 +748,7 @@ class InterfacialVisualizer:
         result: InterfacialAnalysisResult,
         save_dir: Union[str, Path] = "interfacial_analysis_results",
         timestep_fs: float = 0.5,
+        start_time_fs: float = 0.0,
     ) -> None:
         """Generate all four figures and save to *save_dir*."""
         save_dir = Path(save_dir)
@@ -755,19 +756,20 @@ class InterfacialVisualizer:
 
         self.plot_density_profile(result, save_dir / "density_profile.png")
         self.plot_angle_distributions(result, save_dir / "angle_distributions.png")
-        self.plot_hbond_evolution(result, save_dir / "hbond_evolution.png", timestep_fs)
-        self.plot_surface_fluctuation(result, save_dir / "surface_fluctuation.png", timestep_fs)
+        self.plot_hbond_evolution(result, save_dir / "hbond_evolution.png", timestep_fs, start_time_fs)
+        self.plot_surface_fluctuation(result, save_dir / "surface_fluctuation.png", timestep_fs, start_time_fs)
 
         print(f"All figures saved to {save_dir}/")
 
         # Save raw data to CSV files
-        self.save_csvs(result, save_dir, timestep_fs)
+        self.save_csvs(result, save_dir, timestep_fs, start_time_fs)
 
     def save_csvs(
         self,
         result: InterfacialAnalysisResult,
         save_dir: Union[str, Path],
         timestep_fs: float = 0.5,
+        start_time_fs: float = 0.0,
     ) -> None:
         """Save the raw data of each plot as separate CSV files in *save_dir*."""
         save_dir = Path(save_dir)
@@ -792,23 +794,23 @@ class InterfacialVisualizer:
 
         # 3. hbond_evolution.csv
         hbond_path = save_dir / "hbond_evolution.csv"
-        n_frames_hb = len(result.hbonds_per_molecule)
-        time_ps_hb = np.arange(n_frames_hb) * timestep_fs / 1000.0
         with open(hbond_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["Time_ps", "HBonds_per_interfacial_water", "N_interfacial_water"])
-            for t, hb, n_w in zip(time_ps_hb, result.hbonds_per_molecule, result.n_interfacial_water):
-                writer.writerow([t, hb, n_w])
+            writer.writerow(["Time_ps", "HBonds_per_Interfacial_Water", "N_Interfacial_Water"])
+            n_hb = len(result.hbonds_per_molecule)
+            time_ps_arr = (start_time_fs + np.arange(n_hb) * timestep_fs) / 1000.0
+            for t_ps, hb, n_w in zip(time_ps_arr, result.hbonds_per_molecule, result.n_interfacial_water):
+                writer.writerow([t_ps, hb, n_w])
 
         # 4. surface_fluctuation.csv
-        fluct_path = save_dir / "surface_fluctuation.csv"
-        n_frames_fl = len(result.z_surf_timeseries)
-        time_ps_fl = np.arange(n_frames_fl) * timestep_fs / 1000.0
-        with open(fluct_path, "w", newline="", encoding="utf-8") as f:
+        surf_path = save_dir / "surface_fluctuation.csv"
+        with open(surf_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["Time_ps", "Z_surface_A"])
-            for t, z in zip(time_ps_fl, result.z_surf_timeseries):
-                writer.writerow([t, z])
+            writer.writerow(["Time_ps", "Z_GDS_A"])
+            n_surf = len(result.z_surf_timeseries)
+            time_ps_arr_surf = (start_time_fs + np.arange(n_surf) * timestep_fs) / 1000.0
+            for t_ps, z in zip(time_ps_arr_surf, result.z_surf_timeseries):
+                writer.writerow([t_ps, z])
 
         print(f"All raw data CSVs saved to {save_dir}/")
 
@@ -870,12 +872,13 @@ class InterfacialVisualizer:
         result: InterfacialAnalysisResult,
         filepath: Union[str, Path],
         timestep_fs: float = 0.5,
+        start_time_fs: float = 0.0,
     ) -> None:
         """H-bond count and interfacial water count vs time."""
         import matplotlib.pyplot as plt
 
         n = len(result.hbonds_per_molecule)
-        time_ps = np.arange(n) * timestep_fs / 1000.0
+        time_ps = (start_time_fs + np.arange(n) * timestep_fs) / 1000.0
 
         fig, ax1 = plt.subplots(figsize=self.figsize, dpi=self.dpi)
         color1 = "tab:blue"
@@ -903,12 +906,13 @@ class InterfacialVisualizer:
         result: InterfacialAnalysisResult,
         filepath: Union[str, Path],
         timestep_fs: float = 0.5,
+        start_time_fs: float = 0.0,
     ) -> None:
         """Z_GDS(t) time series and fluctuation histogram."""
         import matplotlib.pyplot as plt
 
         n = len(result.z_surf_timeseries)
-        time_ps = np.arange(n) * timestep_fs / 1000.0
+        time_ps = (start_time_fs + np.arange(n) * timestep_fs) / 1000.0
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4.5), dpi=self.dpi,
                                         gridspec_kw={"width_ratios": [3, 1]})

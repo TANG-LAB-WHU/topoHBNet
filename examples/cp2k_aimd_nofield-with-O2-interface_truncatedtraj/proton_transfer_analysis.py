@@ -65,6 +65,8 @@ def parse_args():
                         help='Output directory')
     parser.add_argument('--sample-interval', type=int, default=1,
                         help='Analyze every N frames')
+    parser.add_argument('--timestep', type=float, default=0.5,
+                        help='Simulation timestep in femtoseconds')
     import equilibration_utils
     parser = equilibration_utils.add_equilibration_args(parser)
     return parser.parse_args()
@@ -252,30 +254,42 @@ def main():
     hodge_decompositions = [] # (grad, curl, harm) percentages
     
     # Frame loop
-    frames = list(parser)[::args.sample_interval]
+    # Frame loop — read all raw frames first
+    all_frames = list(parser)
     
-    # Equilibration detection and cutoff
+    # Equilibration detection — cut BEFORE analysis
     import equilibration_utils
     base_dir = __import__("pathlib").Path(args.xyz).parent
     ener_path = base_dir / getattr(args, "equil_ener_file", "trajectory.ener")
     if not ener_path.exists() and getattr(args, "equil_auto", False):
-        print("    [Equilibration] Computing fallback timeseries (n_hbonds)...")
-        fallback_ts = np.array([len(detector.detect_hbonds(f)) for f in frames])
+        print("    [Equilibration] Computing fallback timeseries (n_hbonds) on sampled frames...")
+        sampled_for_equil = all_frames[::args.sample_interval]
+        fallback_ts = np.array([len(detector.detect_hbonds(f)) for f in sampled_for_equil])
     else:
-        fallback_ts = np.array([len(f.positions) for f in frames])
+        fallback_ts = None
         
-    t0, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
+    t0_raw, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
         args, fallback_timeseries=fallback_ts, fallback_observable="n_hbonds",
         sample_interval=args.sample_interval, base_dir=base_dir
     )
-    time_arr_fs = np.arange(len(ts_signal)) * args.sample_interval * 0.5
+    if ts_signal is not None and len(ts_signal) > 0:
+        if actual_obs in {"potential_energy", "temperature", "kinetic_energy", "conserved_quantity"}:
+            time_arr_fs = np.arange(len(ts_signal)) * 0.5
+        else:
+            time_arr_fs = np.arange(len(ts_signal)) * args.sample_interval * 0.5
+    else:
+        time_arr_fs = np.array([])
     equilibration_utils.generate_equilibration_report_and_plot(
-        t0, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
+        t0_raw, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
     )
-    if t0 > 0:
-        print(f"    [Equilibration] Discarding first {t0} sampled frames as equilibration phase.")
-        frames = frames[t0:]
-        print(f"    [Equilibration] Production phase frames: {len(frames)}\n")
+
+    # Trim equilibration phase, then apply sample_interval striding
+    if t0_raw > 0:
+        print(f"    [Equilibration] Discarding first {t0_raw} raw frames as equilibration phase.")
+        all_frames = all_frames[t0_raw:]
+        print(f"    [Equilibration] Production phase raw frames: {len(all_frames)}")
+
+    frames = all_frames[::args.sample_interval]
 
     n_frames = len(frames)
     
@@ -347,7 +361,7 @@ def main():
     
     # Save Time Series to CSV
     hodge_arr = np.array(hodge_decompositions)
-    time_fs = [frame.timestep * 0.5 for frame in frames] # Timestep defaults to 0.5 fs
+    time_fs = [frame.timestep * args.timestep for frame in frames]
     
     ts_df = pd.DataFrame({
         "Frame": [f.timestep for f in frames],
