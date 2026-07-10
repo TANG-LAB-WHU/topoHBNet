@@ -1429,6 +1429,25 @@ def generate_advanced_plots(results: List[Dict], frames: List[Frame],
 # Topological Machine Learning Analysis
 # =============================================================================
 
+def _embed_single_sc(args) -> np.ndarray:
+    """Helper function for parallel execution of Cell2Vec."""
+    sc, ml_dim = args
+    if getattr(sc, 'dim', 0) < 1:
+        return np.zeros(ml_dim)
+        
+    embedder = HBondEmbedder(method='cell2vec', dimensions=ml_dim, num_walks=20)
+    try:
+        emb = embedder.fit_transform(sc)
+        if emb is None or len(emb) == 0 or (isinstance(emb, np.ndarray) and np.ptp(emb) == 0):
+            fallback_embedder = HBondEmbedder(method='hope', dimensions=ml_dim)
+            emb = fallback_embedder.fit_transform(sc)
+        if emb is not None and len(emb) > 0:
+            return np.mean(emb, axis=0)
+    except Exception:
+        pass
+    return np.zeros(ml_dim)
+
+
 def perform_topological_ml_analysis(sc_list: List, ml_dim: int) -> Dict:
     """
     Perform topological machine learning analysis on a list of simplicial complexes.
@@ -1444,36 +1463,22 @@ def perform_topological_ml_analysis(sc_list: List, ml_dim: int) -> Dict:
     print(f"    Running TML on {len(sc_list)} frames...")
     
     # 1. Topological Embeddings
-    print("        Generating Cell2Vec embeddings...")
-    embedder = HBondEmbedder(method='cell2vec', dimensions=ml_dim)
-    frame_embeddings = []
+    print("        Generating Cell2Vec embeddings (Parallelized)...")
+    import multiprocessing
+    import concurrent.futures
     
-    for i, sc in enumerate(sc_list):
-        try:
-            # Try specified method first, fallback to HOPE if it fails or returns zeros
-            try:
-                emb = embedder.fit_transform(sc)
-            except Exception as e:
-                if i < 3: print(f"        [Frame {i}] Cell2Vec failed: {e}", flush=True)
-                emb = None
-            
-            # If zeros or None, try HOPE (deterministic)
-            if emb is None or len(emb) == 0 or (isinstance(emb, np.ndarray) and np.ptp(emb) == 0):
-                if i < 3: print(f"        [Frame {i}] Falling back to HOPE...", flush=True)
-                try:
-                    fallback_embedder = HBondEmbedder(method='hope', dimensions=ml_dim)
-                    emb = fallback_embedder.fit_transform(sc)
-                except Exception as e:
-                    if i < 3: print(f"        [Frame {i}] HOPE failed: {e}", flush=True)
-                    emb = None
-                
-            if emb is not None and len(emb) > 0:
-                frame_embeddings.append(np.mean(emb, axis=0))
-            else:
-                frame_embeddings.append(np.zeros(ml_dim))
-        except Exception as e:
-            if i < 3: print(f"        [Frame {i}] Processing failed: {e}", flush=True)
-            frame_embeddings.append(np.zeros(ml_dim))
+    n_workers = max(1, multiprocessing.cpu_count() - 2)
+    print(f"        Using {n_workers} CPU cores for parallel embedding...")
+    
+    frame_embeddings = []
+    args_list = [(sc, ml_dim) for sc in sc_list]
+    
+    # Use map to preserve temporal order
+    with concurrent.futures.ProcessPoolExecutor(max_workers=n_workers) as executor:
+        for i, result in enumerate(executor.map(_embed_single_sc, args_list)):
+            frame_embeddings.append(result)
+            if (i + 1) % 100 == 0:
+                print(f"        Processed {i+1}/{len(sc_list)} embeddings...")
     
     frame_embeddings = np.array(frame_embeddings)
     
@@ -2020,7 +2025,7 @@ def _main_body(args, traj_file: Path, output_dir: Path, log_path: Path):
     # Parse trajectory
     print("\n[1] Parsing trajectory with ASE backend...")
     cell_path = Path(__file__).parent / args.cell_file if args.cell_file else None
-    parser = TrajectoryParser(traj_file, format='xyz', cell_filepath=cell_path)
+    parser = TrajectoryParser(traj_file, cell_filepath=cell_path)
     frames = parser.parse()
     print(f"    Loaded {len(frames)} frames")
     print(f"    Atoms per frame: {frames[0].n_atoms}")

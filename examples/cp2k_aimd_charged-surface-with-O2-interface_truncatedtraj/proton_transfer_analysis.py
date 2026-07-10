@@ -359,12 +359,15 @@ def main():
     # 3. Post-Processing & Save Results
     print("\nProcessing overall statistics...")
     
-    # Save Time Series to CSV
+    # Calculate robust time and frame indices
+    # (Since CP2K .xyz 'time' parsed by ASE is already in fs, whereas LAMMPS 'timestep' is step index,
+    # we use the absolute frame index to ensure consistent time_fs calculation)
     hodge_arr = np.array(hodge_decompositions)
-    time_fs = [frame.timestep * args.timestep for frame in frames]
+    absolute_frame_indices = [t0_raw + i * args.sample_interval for i in range(len(frames))]
+    time_fs = [idx * args.timestep for idx in absolute_frame_indices]
     
     ts_df = pd.DataFrame({
-        "Frame": [f.timestep for f in frames],
+        "Frame": absolute_frame_indices,
         "Time_fs": time_fs,
         "LBHB_Fraction": lbhb_fractions,
         "Avg_Wire_Length": wire_lengths,
