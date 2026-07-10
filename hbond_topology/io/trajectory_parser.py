@@ -397,43 +397,11 @@ class TrajectoryParser:
         if self._parsed:
             return self._frames
         
-        # Read all frames using ASE
-        read_kwargs = {}
-        if self.specorder and self.format == 'lammps-dump-text':
-            read_kwargs['specorder'] = self.specorder
-        atoms_list = read(
-            str(self.filepath), index=':', format=self.format, **read_kwargs
-        )
-        
-        # Handle single Atoms object (not a list)
-        if isinstance(atoms_list, Atoms):
-            atoms_list = [atoms_list]
-            
-        # Parse cell file if provided
-        cell_data = self._parse_cp2k_cell_file()
-        
-        frames = []
-        for i, atoms in enumerate(atoms_list):
-            frame = Frame.from_ase_atoms(
-                atoms, 
-                atoms.info.get('timestep', atoms.info.get('time', i)), 
-                self.element_to_type
-            )
-            
-            # Override box information if cell data is available
-            if cell_data is not None and i < len(cell_data):
-                # Update box_bounds based on cell lengths
-                # Assuming box starts at origin (0,0,0) as is typical for minimum image convention
-                lengths = cell_data[i]
-                frame.box_bounds = np.array([
-                    [0.0, lengths[0]],
-                    [0.0, lengths[1]],
-                    [0.0, lengths[2]]
-                ])
-                
-            frames.append(frame)
-            
-        self._frames = frames
+        # Read frames lazily using iread generator to prevent massive memory overhead (OOM)
+        # ase.io.read(..., index=':') loads all frames into heavy Atoms objects simultaneously.
+        # list(self._parse_generator()) uses iread to parse one at a time and converts them to
+        # lightweight numpy-backed Frame objects immediately, allowing Atoms to be GC'd.
+        self._frames = list(self._parse_generator())
         self._parsed = True
         return self._frames
     

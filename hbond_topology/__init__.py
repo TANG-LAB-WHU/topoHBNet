@@ -4,8 +4,20 @@ from LAMMPS molecular dynamics trajectories using TopoNetX, TopoModelX,
 and TopoEmbedX libraries.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __author__ = "SIQI TANG"
+
+# To avoid a known segmentation fault caused by loading PyTorch before JuliaCall,
+# we attempt to import PySR/juliacall first if they exist in the environment.
+# See: https://github.com/pytorch/pytorch/issues/78829
+try:
+    import pysr
+except ImportError:
+    try:
+        import juliacall
+    except ImportError:
+        pass
+
 
 # Core modules (always available)
 from .io.trajectory_parser import TrajectoryParser
@@ -30,35 +42,38 @@ __all__ = [
     "ProtonTransferProfiler",
     "ProtonWireTracker",
     "HodgeFlowDecomposer",
+    "HBondEmbedder",
+    "PersistenceAnalyzer",
+    "SymbolicRegressor",
+    "DynamicsIdentifier",
+    "HodgeLaplacianGNN",
+    "HBondTNN",
 ]
 
-# Optional: Embedding module (requires topoembedx)
-try:
-    from .embedding.embedder import HBondEmbedder
-    __all__.append("HBondEmbedder")
-except ImportError:
-    pass
-
-# Optional: Persistence module (requires gudhi)
-try:
-    from .topology.persistence import PersistenceAnalyzer
-    __all__.append("PersistenceAnalyzer")
-except ImportError:
-    pass
-
-# Optional: Physics Discovery module (requires pysr, pysindy, etc.)
-# NOTE: Imported before the deep learning module to ensure juliacall is loaded before torch,
-# which completely eliminates the Torch/JuliaCall dynamic library loading order segfault risk.
-try:
-    from .learning.discovery import SymbolicRegressor, DynamicsIdentifier, HodgeLaplacianGNN
-    __all__.extend(["SymbolicRegressor", "DynamicsIdentifier", "HodgeLaplacianGNN"])
-except ImportError:
-    pass
-
-# Optional: Learning module (requires topomodelx)
-try:
-    from .learning.tnn_model import HBondTNN
-    __all__.append("HBondTNN")
-except ImportError:
-    pass
-
+# Lazy loading for heavy optional modules (PEP 562)
+# This prevents Torch/JuliaCall segfaults and massive thread contention slowdowns
+# by ensuring they are only loaded when explicitly requested, not on every import.
+def __getattr__(name):
+    if name == "HBondEmbedder":
+        from .embedding.embedder import HBondEmbedder
+        return HBondEmbedder
+    elif name == "PersistenceAnalyzer":
+        from .topology.persistence import PersistenceAnalyzer
+        return PersistenceAnalyzer
+    elif name in ["SymbolicRegressor", "DynamicsIdentifier", "HodgeLaplacianGNN"]:
+        # NOTE: To avoid a known segmentation fault caused by loading PyTorch before JuliaCall,
+        # we ensure pysr/juliacall is loaded before torch if both are used.
+        try:
+            import pysr
+        except ImportError:
+            try:
+                import juliacall
+            except ImportError:
+                pass
+        from .learning.discovery import SymbolicRegressor, DynamicsIdentifier, HodgeLaplacianGNN
+        return locals()[name]
+    elif name == "HBondTNN":
+        from .learning.tnn_model import HBondTNN
+        return HBondTNN
+    
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

@@ -237,7 +237,10 @@ class InterfacialAnalyzer:
     # Surface position
     # ------------------------------------------------------------------
 
-    def compute_surface_position(self, frame: Frame) -> float:
+    def compute_surface_position(
+        self, frame: Frame,
+        pre_partitioned: Optional[Tuple[List[WaterMolecule], np.ndarray, np.ndarray]] = None
+    ) -> float:
         """
         Compute the instantaneous surface Z coordinate for one frame.
 
@@ -247,6 +250,8 @@ class InterfacialAnalyzer:
         Parameters
         ----------
         frame : Frame
+        pre_partitioned : Optional[Tuple]
+            Optional pre-computed output of _partition_atoms(frame) to save time.
 
         Returns
         -------
@@ -257,7 +262,10 @@ class InterfacialAnalyzer:
             return float(self.static_z_surface)  # type: ignore[arg-type]
 
         # --- Dynamic mode: density crossover ---
-        water_mols, _, substrate_indices = self._partition_atoms(frame)
+        if pre_partitioned is None:
+            water_mols, _, substrate_indices = self._partition_atoms(frame)
+        else:
+            water_mols, _, substrate_indices = pre_partitioned
         z = self.z_axis
         box_lo = frame.box_bounds[z, 0]
         box_hi = frame.box_bounds[z, 1]
@@ -335,8 +343,9 @@ class InterfacialAnalyzer:
             if self.verbose and (i % max(1, n_frames // 10) == 0):
                 print(f"  Density profile: frame {i + 1}/{n_frames}")
 
-            z_surf = self.compute_surface_position(frame)
-            water_mols, water_indices, substrate_indices = self._partition_atoms(frame)
+            partitioned = self._partition_atoms(frame)
+            z_surf = self.compute_surface_position(frame, pre_partitioned=partitioned)
+            water_mols, water_indices, substrate_indices = partitioned
 
             # Substrate
             if len(substrate_indices) > 0:
@@ -579,36 +588,45 @@ class InterfacialAnalyzer:
             hb_count_interface: Dict[int, int] = {wm.o_idx: 0 for wm in interfacial}
             hb_count_bulk: Dict[int, int] = {wm.o_idx: 0 for wm in bulk}
 
-            for donor in all_water:
-                for acceptor in all_water:
-                    if donor.o_idx == acceptor.o_idx:
+            if len(all_water) > 0:
+                # Vectorized O-O distance filter
+                o_pos = np.array([wm.o_position for wm in all_water])
+                delta_oo = o_pos[np.newaxis, :, :] - o_pos[:, np.newaxis, :]
+                delta_oo -= box_lengths * np.round(delta_oo / box_lengths)
+                r_oo_sq = np.sum(delta_oo**2, axis=-1)
+                
+                # Candidates: within O-O cutoff and not self-interaction
+                candidates = np.where((r_oo_sq > 0.1) & (r_oo_sq <= self.r_oo_hbond**2))
+            else:
+                candidates = ([], [])
+
+            for d_idx, a_idx in zip(*candidates):
+                donor = all_water[d_idx]
+                acceptor = all_water[a_idx]
+
+                # Check each H of donor
+                for h_pos in [donor.h1_position, donor.h2_position]:
+                    oh = h_pos - donor.o_position
+                    oh -= box_lengths * np.round(oh / box_lengths)
+                    oa = acceptor.o_position - donor.o_position
+                    oa -= box_lengths * np.round(oa / box_lengths)
+
+                    # O···O-H angle
+                    norm_oh = np.linalg.norm(oh)
+                    norm_oa = np.linalg.norm(oa)
+                    if norm_oh < 1e-10 or norm_oa < 1e-10:
                         continue
+                        
+                    cos_angle = np.dot(oh, oa) / (norm_oh * norm_oa)
+                    cos_angle = np.clip(cos_angle, -1.0, 1.0)
+                    angle_deg = np.degrees(np.arccos(cos_angle))
 
-                    # O···O distance
-                    delta = acceptor.o_position - donor.o_position
-                    delta -= box_lengths * np.round(delta / box_lengths)
-                    r_oo = np.linalg.norm(delta)
-                    if r_oo > self.r_oo_hbond:
-                        continue
-
-                    # Check each H of donor
-                    for h_pos in [donor.h1_position, donor.h2_position]:
-                        oh = h_pos - donor.o_position
-                        oh -= box_lengths * np.round(oh / box_lengths)
-                        oa = acceptor.o_position - donor.o_position
-                        oa -= box_lengths * np.round(oa / box_lengths)
-
-                        # O···O-H angle
-                        cos_angle = np.dot(oh, oa) / (np.linalg.norm(oh) * np.linalg.norm(oa) + 1e-30)
-                        cos_angle = np.clip(cos_angle, -1.0, 1.0)
-                        angle_deg = np.degrees(np.arccos(cos_angle))
-
-                        if angle_deg < self.angle_ooh_hbond:
-                            if donor.o_idx in hb_count_interface:
-                                hb_count_interface[donor.o_idx] += 1
-                            if donor.o_idx in hb_count_bulk:
-                                hb_count_bulk[donor.o_idx] += 1
-                            break  # count only one H-bond per donor-acceptor pair
+                    if angle_deg < self.angle_ooh_hbond:
+                        if donor.o_idx in hb_count_interface:
+                            hb_count_interface[donor.o_idx] += 1
+                        if donor.o_idx in hb_count_bulk:
+                            hb_count_bulk[donor.o_idx] += 1
+                        break  # count only one H-bond per donor-acceptor pair
 
             # Mean H-bonds per interfacial water
             if len(hb_count_interface) > 0:

@@ -122,29 +122,36 @@ class HBondDetector:
         water_molecules = []
         box_lengths = frame.box_lengths
         
-        for o_idx in o_indices:
-            o_pos = frame.positions[o_idx]
+        if len(o_indices) == 0 or len(h_indices) == 0:
+            return water_molecules
             
-            # Find nearby hydrogens
-            nearby_h = []
-            for h_idx in h_indices:
-                h_pos = frame.positions[h_idx]
-                dist, _ = self.minimum_image_distance(o_pos, h_pos, box_lengths)
-                if dist < self.r_oh_max:
-                    nearby_h.append((h_idx, dist))
+        o_pos = frame.positions[o_indices]
+        h_pos = frame.positions[h_indices]
+        
+        # Vectorized minimum image distance (N_O, N_H, 3)
+        delta = h_pos[np.newaxis, :, :] - o_pos[:, np.newaxis, :]
+        delta -= box_lengths * np.round(delta / box_lengths)
+        dist_sq = np.sum(delta**2, axis=-1)
+        
+        r_oh_max_sq = self.r_oh_max**2
+        
+        for i, o_idx in enumerate(o_indices):
+            # Find H indices within cutoff
+            nearby_mask = dist_sq[i] < r_oh_max_sq
+            h_matches = np.where(nearby_mask)[0]
             
-            # Sort by distance and take closest 2
-            nearby_h.sort(key=lambda x: x[1])
-            
-            if len(nearby_h) >= 2:
-                h1_idx = nearby_h[0][0]
-                h2_idx = nearby_h[1][0]
+            if len(h_matches) >= 2:
+                # Sort by actual distance squared
+                dists = dist_sq[i, h_matches]
+                sorted_idx = np.argsort(dists)
+                h1_idx = h_indices[h_matches[sorted_idx[0]]]
+                h2_idx = h_indices[h_matches[sorted_idx[1]]]
                 
                 water = WaterMolecule(
                     o_idx=o_idx,
                     h1_idx=h1_idx,
                     h2_idx=h2_idx,
-                    o_position=o_pos,
+                    o_position=o_pos[i],
                     h1_position=frame.positions[h1_idx],
                     h2_position=frame.positions[h2_idx]
                 )
