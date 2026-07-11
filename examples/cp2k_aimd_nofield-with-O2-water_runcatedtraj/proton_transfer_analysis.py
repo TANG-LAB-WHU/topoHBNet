@@ -53,7 +53,7 @@ def parse_args():
                         help='Path to CP2K pos-1.xyz trajectory')
     parser.add_argument('--cell-file', type=str, default='trajectory.cell',
                         help='Path to CP2K cell file')
-    parser.add_argument('--temperature', type=float, default=300.0,
+    parser.add_argument('--temperature', type=float, default=298.0,
                         help='Simulation temperature in Kelvin')
     parser.add_argument('--r-da-max', type=float, default=3.5,
                         help='Max donor-acceptor distance (A)')
@@ -92,36 +92,40 @@ def classify_oxygen_atoms(frame, detector):
     sinks = set()
     water = set()
 
-    # Create helper dictionary for O-H bonds
-    o_h_dists = defaultdict(list)
-    for o_idx in o_indices:
-        o_pos = positions[o_idx]
-        for h_idx in h_indices:
-            dist, _ = detector.minimum_image_distance(o_pos, positions[h_idx], box_lengths)
-            if dist < 1.2:  # typical covalent O-H threshold
-                o_h_dists[o_idx].append(h_idx)
+    if len(o_indices) == 0:
+        return [], [], []
 
-    # Classify based on covalent structure
-    for o_idx in o_indices:
-        o_pos = positions[o_idx]
-        
-        # Check Si-O bonds (Surface/Silanols)
-        is_surface = False
-        for si_idx in si_indices:
-            dist, _ = detector.minimum_image_distance(o_pos, positions[si_idx], box_lengths)
-            if dist < 2.0:  # typical covalent Si-O threshold
-                is_surface = True
-                break
-        
-        h_bonded = o_h_dists[o_idx]
-        
-        if is_surface:
+    # Vectorized O-H distances
+    if len(h_indices) > 0:
+        o_pos = positions[o_indices]
+        h_pos = positions[h_indices]
+        diff = o_pos[:, np.newaxis, :] - h_pos[np.newaxis, :, :]
+        if box_lengths is not None:
+            diff = diff - np.round(diff / box_lengths) * box_lengths
+        dists_oh = np.linalg.norm(diff, axis=2)
+        o_h_counts = np.sum(dists_oh < 1.2, axis=1)
+    else:
+        o_h_counts = np.zeros(len(o_indices), dtype=int)
+
+    # Vectorized Si-O distances
+    if len(si_indices) > 0:
+        si_pos = positions[si_indices]
+        diff_si = o_pos[:, np.newaxis, :] - si_pos[np.newaxis, :, :]
+        if box_lengths is not None:
+            diff_si = diff_si - np.round(diff_si / box_lengths) * box_lengths
+        dists_si = np.linalg.norm(diff_si, axis=2)
+        is_surface_arr = np.any(dists_si < 2.0, axis=1)
+    else:
+        is_surface_arr = np.zeros(len(o_indices), dtype=bool)
+
+    for i, o_idx in enumerate(o_indices):
+        if is_surface_arr[i]:
             # If bonded to Si, treat as source (active silanols)
             sources.add(o_idx)
-        elif len(h_bonded) == 2:
+        elif o_h_counts[i] == 2:
             # Standard water oxygen
             water.add(o_idx)
-        elif len(h_bonded) == 0:
+        elif o_h_counts[i] == 0:
             # Potential reactive O2 or interfacial oxide sink
             sinks.add(o_idx)
         else:
@@ -359,12 +363,15 @@ def main():
     # 3. Post-Processing & Save Results
     print("\nProcessing overall statistics...")
     
-    # Save Time Series to CSV
+    # Calculate robust time and frame indices
+    # (Since CP2K .xyz 'time' parsed by ASE is already in fs, whereas LAMMPS 'timestep' is step index,
+    # we use the absolute frame index to ensure consistent time_fs calculation)
     hodge_arr = np.array(hodge_decompositions)
-    time_fs = [frame.timestep * args.timestep for frame in frames]
+    absolute_frame_indices = [t0_raw + i * args.sample_interval for i in range(len(frames))]
+    time_fs = [idx * args.timestep for idx in absolute_frame_indices]
     
     ts_df = pd.DataFrame({
-        "Frame": [f.timestep for f in frames],
+        "Frame": absolute_frame_indices,
         "Time_fs": time_fs,
         "LBHB_Fraction": lbhb_fractions,
         "Avg_Wire_Length": wire_lengths,

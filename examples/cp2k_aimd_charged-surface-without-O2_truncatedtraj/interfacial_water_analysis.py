@@ -163,7 +163,7 @@ def main():
         print(f"Warning: Cell file not found: {cell_path}. Running without box/PBC cell file.")
         cell_path = None
 
-    parser = TrajectoryParser(str(traj_path), format="xyz", cell_filepath=cell_path)
+    parser = TrajectoryParser(str(traj_path), cell_filepath=cell_path)
     frames = parser.parse()
     print(f"    Total frames loaded: {len(frames)}")
 
