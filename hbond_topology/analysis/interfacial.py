@@ -382,23 +382,25 @@ class InterfacialAnalyzer:
     ) -> float:
         """
         Find the first valley in the O-density profile for ΔZ > 0.
-
-        Falls back to 4.0 Å if no clear valley is found.
+        Falls back to 4.0 Å if no clear valley is found or if vacuum is reached.
         """
+        if len(density_O) < 5:
+            return 4.0
+
+        # Smooth the entire profile FIRST to avoid boundary artifacts at Z=0.5
+        from scipy.ndimage import gaussian_filter1d
+        rho_smooth_full = gaussian_filter1d(density_O, sigma=2.0)
+
         # Focus on the water side (ΔZ > 0)
         mask = z_bins > 0.5  # skip the immediate crossover region
         if not np.any(mask):
             return 4.0
 
         z_pos = z_bins[mask]
-        rho = density_O[mask]
+        rho_smooth = rho_smooth_full[mask]
 
-        if len(rho) < 5:
-            return 4.0
-
-        # Smooth for peak/valley detection
-        from scipy.ndimage import gaussian_filter1d
-        rho_smooth = gaussian_filter1d(rho, sigma=2.0)
+        # Define a vacuum threshold to prevent searching for valleys in vacuum noise
+        vacuum_threshold = 0.01 * rho_smooth.max()
 
         # Find first peak
         peak_idx = None
@@ -413,6 +415,10 @@ class InterfacialAnalyzer:
 
         # Find first valley after peak
         for j in range(peak_idx + 1, len(rho_smooth) - 1):
+            # If we hit the vacuum floor without a valley, fallback to standard 1st shell
+            if rho_smooth[j] <= vacuum_threshold:
+                return 4.0
+                
             if rho_smooth[j] < rho_smooth[j - 1] and rho_smooth[j] < rho_smooth[j + 1]:
                 return float(z_pos[j])
 
