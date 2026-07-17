@@ -84,3 +84,6 @@ Thumbs.db
 *.npy
 *.png
 trajectory.xyz
+
+# References
+references/
