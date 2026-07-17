@@ -79,3 +79,8 @@ Thumbs.db
 
 # uv cache
 .uv/
+*.csv
+*.svg
+*.npy
+*.png
+trajectory.xyz

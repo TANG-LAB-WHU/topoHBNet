@@ -1,0 +1,196 @@
+{
+  "n_frames_analyzed": 8001,
+  "basic_statistics": {
+    "hbond_count": {
+      "mean": 160.67091613548305,
+      "std": 3.942920484279095,
+      "min": 146,
+      "max": 173
+    },
+    "betti_0": {
+      "mean": 1.0,
+      "std": 0.0
+    },
+    "betti_1": {
+      "mean": 65.19235095613048,
+      "std": 3.2521222989585548
+    },
+    "betti_2": {
+      "mean": 0.0,
+      "std": 0.0
+    },
+    "geometry": {
+      "mean_distance_da": 2.8519844575535784,
+      "std_distance_da": 0.1829606678538468,
+      "mean_angle_dha": 156.724727178652,
+      "std_angle_dha": 12.889028182154957
+    }
+  },
+  "advanced_statistics": {
+    "coordination": {
+      "mean": 3.4321154105433465,
+      "std": 0.8866350067786163,
+      "distribution": {
+        "1": 13610,
+        "2": 98066,
+        "3": 249409,
+        "4": 329751,
+        "5": 55605,
+        "6": 2674,
+        "7": 2
+      }
+    },
+    "water_states": {
+      "0D1A": {
+        "count": 6029,
+        "percentage": 0.8045242311382503
+      },
+      "0D2A": {
+        "count": 9733,
+        "percentage": 1.2987948816832957
+      },
+      "0D3A": {
+        "count": 1673,
+        "percentage": 0.22324913562685234
+      },
+      "1D0A": {
+        "count": 7581,
+        "percentage": 1.0116268363342305
+      },
+      "1D1A": {
+        "count": 69109,
+        "percentage": 9.2220708392326
+      },
+      "1D2A": {
+        "count": 108270,
+        "percentage": 14.447808675624211
+      },
+      "1D3A": {
+        "count": 14408,
+        "percentage": 1.922638102876084
+      },
+      "1D4A": {
+        "count": 356,
+        "percentage": 0.047505494490830504
+      },
+      "2D0A": {
+        "count": 19224,
+        "percentage": 2.565296702504847
+      },
+      "2D1A": {
+        "count": 138924,
+        "percentage": 18.53835201304533
+      },
+      "2D2A": {
+        "count": 308981,
+        "percentage": 41.23116627323399
+      },
+      "2D3A": {
+        "count": 42233,
+        "percentage": 5.635672889975407
+      },
+      "2D4A": {
+        "count": 924,
+        "percentage": 0.1233007778357511
+      },
+      "3D0A": {
+        "count": 542,
+        "percentage": 0.0723257809382869
+      },
+      "3D1A": {
+        "count": 6351,
+        "percentage": 0.847492684020406
+      },
+      "3D2A": {
+        "count": 12917,
+        "percentage": 1.7236754840956676
+      },
+      "3D3A": {
+        "count": 1646,
+        "percentage": 0.2196461908199635
+      },
+      "4D0A": {
+        "count": 11,
+        "percentage": 0.0014678664028065606
+      },
+      "4D1A": {
+        "count": 99,
+        "percentage": 0.013210797625259046
+      },
+      "4D2A": {
+        "count": 104,
+        "percentage": 0.013878009626534755
+      },
+      "4D3A": {
+        "count": 2,
+        "percentage": 0.0002668848005102837
+      },
+      "free H2O": {
+        "count": 270,
+        "percentage": 0.0360294480688883
+      }
+    },
+    "degree": {
+      "mean": 3.4321154105433465,
+      "std": 0.8866350067786163,
+      "distribution": {
+        "1": 13610,
+        "2": 98066,
+        "3": 249409,
+        "4": 329751,
+        "5": 55605,
+        "6": 2674,
+        "7": 2
+      }
+    },
+    "lifetime": {
+      "mean_fs": 226.37301866854526,
+      "std_fs": 510.12573886410445,
+      "max_fs": 4000.5
+    },
+    "clustering": {
+      "mean": 0.01949592686188266,
+      "std": 0.013067773289282932
+    },
+    "hbond_strength": {
+      "strong": 562704,
+      "moderate": 661997,
+      "weak": 60827,
+      "total": 1285528,
+      "strong_pct": 43.77220877336005,
+      "moderate_pct": 51.49611677069655,
+      "weak_pct": 4.731674455943394
+    },
+    "persistent_homology": {
+      "available": true,
+      "frame_index": 4000,
+      "total_frames": 8001,
+      "all_frames_analyzed": true,
+      "dynamics_summary": {
+        "total_persistence_H0": {
+          "mean": 422.64165033143036,
+          "std": 1.881897221302273
+        },
+        "total_persistence_H1": {
+          "mean": 43.89934249445945,
+          "std": 2.5336183635402265
+        },
+        "n_features_H0": {
+          "mean": 147.0,
+          "std": 0.0
+        },
+        "n_features_H1": {
+          "mean": 68.6944131983502,
+          "std": 3.9405315707545436
+        }
+      }
+    }
+  },
+  "topological_machine_learning": {
+    "pca_explained_variance": [
+      0.08464182168245316,
+      0.0673842653632164
+    ],
+    "feature_extraction": "Cell2Vec (Embedding) + SAN (TNN)"
+  }
+}

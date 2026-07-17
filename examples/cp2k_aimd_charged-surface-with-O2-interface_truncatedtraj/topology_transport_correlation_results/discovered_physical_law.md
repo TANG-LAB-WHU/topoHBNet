@@ -13,15 +13,15 @@ Below is the frequency table of the 'best' equations selected by PySR across all
 
 | Rank | Discovered Consensus Equation | Vote Count | Frequency | 
 | :--- | :--- | :--- | :--- |
-| 1 | `LBHB_Fraction ≈ 0.18348734/betti_1` | 1/5 | 20.0% |
+| 1 | `LBHB_Fraction ≈ 0.18348736/betti_1` | 1/5 | 20.0% |
 | 2 | `LBHB_Fraction ≈ 0.1834876/betti_1` | 1/5 | 20.0% |
-| 3 | `LBHB_Fraction ≈ 0.18348595/betti_1` | 1/5 | 20.0% |
-| 4 | `LBHB_Fraction ≈ 0.18348756/betti_1` | 1/5 | 20.0% |
-| 5 | `LBHB_Fraction ≈ 0.18348736/betti_1` | 1/5 | 20.0% |
+| 3 | `LBHB_Fraction ≈ 0.18348704/betti_1` | 1/5 | 20.0% |
+| 4 | `LBHB_Fraction ≈ 0.18348734/betti_1` | 1/5 | 20.0% |
+| 5 | `LBHB_Fraction ≈ 0.18348749/betti_1` | 1/5 | 20.0% |
 
 > [!IMPORTANT]
 > **Consensus Physical Law Discovered:**
-> $$LBHB_Fraction \approx 0.18348734/betti_1$$
+> $$LBHB_Fraction \approx 0.18348736/betti_1$$
 > This equation emerged as the consensus choice across the independent runs, indicating its high stability and generalizability to represent the governing physical chemistry.
 
 ## 3. Topological Invariant Feature Stability Selection
@@ -29,39 +29,35 @@ We analyzed the recurrence of each topological feature across all equations in t
 
 | Topological Invariant | Description | Occurrence Count | Stability Score | Priority |
 | :--- | :--- | :--- | :--- | :--- |
-| `betti_1` | Number of independent H-bond loops/cycles | 51/76 | 67.1% | ⚡ Medium |
-| `n_hbonds` | Total number of hydrogen bonds in the network | 45/76 | 59.2% | ⚡ Medium |
-| `betti_0` | Number of connected components in the network | 34/76 | 44.7% | ⚡ Medium |
-| `euler_characteristic` | Overall topological connectivity descriptor (Betti-0 - Betti-1 + Betti-2) | 28/76 | 36.8% | ⚡ Medium |
-| `betti_2` | Number of topological voids/cavities | 1/76 | 1.3% | ❄️ Low |
+| `betti_1` | Number of independent H-bond loops/cycles | 47/67 | 70.1% | 🔥 High |
+| `n_hbonds` | Total number of hydrogen bonds in the network | 40/67 | 59.7% | ⚡ Medium |
+| `euler_characteristic` | Overall topological connectivity descriptor (Betti-0 - Betti-1 + Betti-2) | 22/67 | 32.8% | ⚡ Medium |
+| `betti_0` | Number of connected components in the network | 14/67 | 20.9% | ❄️ Low |
+| `betti_2` | Number of topological voids/cavities | 0/67 | 0.0% | ❄️ Low |
 
 > [!TIP]
 > **Topological Driver Interpretation:**
-> The topological invariant `betti_1` is the most stable feature (appearing in 51/76 Pareto equations). This strongly indicates that `betti_1` serves as the primary topological descriptor governing the reactive properties or proton wires in the system.
+> The topological invariant `betti_1` is the most stable feature (appearing in 47/67 Pareto equations). This strongly indicates that `betti_1` serves as the primary topological descriptor governing the reactive properties or proton wires in the system.
 
 ## 4. Detailed Individual Run Fronts
 Below are the individual Pareto fronts obtained from each independent PySR run (trading off accuracy vs. complexity):
 
 <details>
-<summary><b>Run 1 (Seed: 42) — Best Equation: 0.18348734/betti_1</b></summary>
+<summary><b>Run 1 (Seed: 42) — Best Equation: 0.18348736/betti_1</b></summary>
 
 | Complexity | Loss (MSE) | Score | Equation | Sympy Format |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | 2.170629e-07 | 0.0000 | `0.0028535798` | `0.00285357980000000` |
-| 3 | 1.806213e-07 | 0.0919 | `0.18348734 / betti_1` | `0.18348734/betti_1` |
-| 5 | 1.796604e-07 | 0.0027 | `(0.15820767 / betti_1) + 0.00039523386` | `0.00039523386 + 0.15820767/betti_1` |
-| 6 | 1.773860e-07 | 0.0127 | `exp(betti_1 * -0.12831202) + 0.0025515645` | `exp(betti_1*(-0.12831202)) + 0.0025515645` |
-| 7 | 1.768642e-07 | 0.0029 | `((n_hbonds / betti_1) * 0.0016491872) + -0.0013279406` | `-0.0013279406 + n_hbonds*0.0016491872/betti_1` |
-| 8 | 1.745972e-07 | 0.0129 | `exp((euler_characteristic * 19.521065) / n_hbonds) + 0.0023155324` | `exp(euler_characteristic*19.521065/n_hbonds) + 0.0023155324` |
-| 10 | 1.736007e-07 | 0.0029 | `(exp((euler_characteristic * 19.521065) / n_hbonds) / betti_0) + 0.0023173527` | `0.0023173527 + exp(euler_characteristic*19.521065/n_hbonds)/betti_0` |
-| 11 | 1.736007e-07 | 0.0000 | `sin((exp((euler_characteristic * 19.521065) / n_hbonds) / betti_0) + 0.0023173527)` | `sin(0.0023173527 + exp(euler_characteristic*19.521065/n_hbonds)/betti_0)` |
-| 12 | 1.735731e-07 | 0.0002 | `(exp(((0.9989268 - betti_1) * 19.521065) / n_hbonds) / betti_0) + 0.0023176298` | `0.0023176298 + exp((0.9989268 - betti_1)*19.521065/n_hbonds)/betti_0` |
-| 13 | 1.735731e-07 | 0.0000 | `(exp(((cos(betti_2) - betti_1) * 19.521065) / n_hbonds) / betti_0) + 0.0023173527` | `0.0023173527 + exp((-betti_1 + cos(betti_2))*19.521065/n_hbonds)/betti_0` |
-| 14 | 1.732063e-07 | 0.0021 | `(exp((cos(sin(euler_characteristic)) - betti_1) * (19.521065 / n_hbonds)) / betti_0) + 0.0023325782` | `0.0023325782 + exp((-betti_1 + cos(sin(euler_characteristic)))*19.521065/n_hbonds)/betti_0` |
-| 16 | 1.731181e-07 | 0.0003 | `(exp(((cos(sin(0.80655354 - betti_1)) - betti_1) * 19.521065) / n_hbonds) / betti_0) + 0.0023325782` | `0.0023325782 + exp((-betti_1 + cos(sin(0.80655354 - betti_1)))*19.521065/n_hbonds)/betti_0` |
-| 17 | 1.728728e-07 | 0.0014 | `(exp(((sin(exp(sin(0.1507947 - euler_characteristic))) - betti_1) * 19.521065) / n_hbonds) / betti_0) + 0.0023400888` | `0.0023400888 + exp((-betti_1 + sin(exp(sin(0.1507947 - euler_characteristic))))*19.521065/n_hbonds)/betti_0` |
-| 19 | 1.727483e-07 | 0.0004 | `(exp(((sin(euler_characteristic / -0.0022005776) + ((euler_characteristic - 1.3937215) + euler_characteristic)) * 9.614492) / n_hbonds) / betti_0) + 0.0023014566` | `0.0023014566 + exp((euler_characteristic + euler_characteristic + sin(euler_characteristic/(-0.0022005776)) - 1*1.3937215)*9.614492/n_hbonds)/betti_0` |
-| 20 | 1.727482e-07 | 0.0000 | `sin((exp(((sin(euler_characteristic / -0.0022005776) + ((euler_characteristic - 1.3937215) + euler_characteristic)) * 9.614492) / n_hbonds) / betti_0) + 0.0023014566)` | `sin(0.0023014566 + exp((euler_characteristic + euler_characteristic + sin(euler_characteristic/(-0.0022005776)) - 1*1.3937215)*9.614492/n_hbonds)/betti_0)` |
+| 1 | 2.170629e-07 | 0.0000 | `0.0028535803` | `0.00285358030000000` |
+| 3 | 1.806214e-07 | 0.0919 | `0.18348736 / betti_1` | `0.18348736/betti_1` |
+| 4 | 1.806213e-07 | 0.0000 | `sin(0.18348756 / betti_1)` | `sin(0.18348756/betti_1)` |
+| 5 | 1.796619e-07 | 0.0053 | `(0.15725112 / betti_1) - -0.00040970184` | `-1*(-0.00040970184) + 0.15725112/betti_1` |
+| 6 | 1.776502e-07 | 0.0113 | `exp(euler_characteristic * 0.13069943) + 0.002555587` | `exp(euler_characteristic*0.13069943) + 0.002555587` |
+| 7 | 1.768643e-07 | 0.0044 | `(n_hbonds * (0.0016492459 / betti_1)) + -0.0013280835` | `-0.0013280835 + n_hbonds*0.0016492459/betti_1` |
+| 8 | 1.742947e-07 | 0.0146 | `-0.0023818456 / sin(n_hbonds * (-0.84345263 / betti_1))` | `-0.0023818456/sin(n_hbonds*(-0.84345263)/betti_1)` |
+| 10 | 1.733369e-07 | 0.0028 | `-0.014142922 / (-4.4477344 + sin((-3.4733543 / betti_1) * n_hbonds))` | `-0.014142922/(sin(-3.4733543*n_hbonds/betti_1) - 4.4477344)` |
+| 11 | 1.733369e-07 | 0.0000 | `sin(-0.014142922 / (-4.4477344 + sin((-3.4733543 / betti_1) * n_hbonds)))` | `sin(-0.014142922/(sin(-3.4733543*n_hbonds/betti_1) - 4.4477344))` |
+| 12 | 1.725803e-07 | 0.0044 | `-0.014349711 / (sin(betti_0 + ((n_hbonds * -3.820718) / betti_1)) + -4.4442997)` | `-0.014349711/(sin(betti_0 + n_hbonds*(-3.820718)/betti_1) - 4.4442997)` |
+| 13 | 1.725802e-07 | 0.0000 | `sin(-0.014349711 / (sin(betti_0 + ((n_hbonds * -3.820718) / betti_1)) + -4.4442997))` | `sin(-0.014349711/(sin(betti_0 + n_hbonds*(-3.820718)/betti_1) - 4.4442997))` |
 
 </details>
 
@@ -70,91 +66,86 @@ Below are the individual Pareto fronts obtained from each independent PySR run (
 
 | Complexity | Loss (MSE) | Score | Equation | Sympy Format |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | 2.170629e-07 | 0.0000 | `0.0028535798` | `0.00285357980000000` |
+| 1 | 2.170629e-07 | 0.0000 | `0.0028535791` | `0.00285357910000000` |
 | 3 | 1.806214e-07 | 0.0919 | `0.1834876 / betti_1` | `0.1834876/betti_1` |
-| 4 | 1.806213e-07 | 0.0000 | `sin(0.18348747 / betti_1)` | `sin(0.18348747/betti_1)` |
-| 5 | 1.796604e-07 | 0.0053 | `(0.15827924 / betti_1) + 0.00039419674` | `0.00039419674 + 0.15827924/betti_1` |
-| 6 | 1.791664e-07 | 0.0028 | `(0.03603902 / betti_1) * log(n_hbonds)` | `0.03603902*log(n_hbonds)/betti_1` |
-| 7 | 1.768643e-07 | 0.0129 | `-0.0013280711 - ((n_hbonds / betti_1) * -0.00164924)` | `-0.0013280711 - (-0.00164924)*n_hbonds/betti_1` |
-| 8 | 1.741801e-07 | 0.0153 | `-0.002487981 / sin(0.47548547 - (n_hbonds / betti_1))` | `-0.002487981/sin(0.47548547 - n_hbonds/betti_1)` |
-| 10 | 1.734162e-07 | 0.0022 | `(cos((n_hbonds * 1.3706551) / betti_1) * 0.0034584831) - -0.006076484` | `cos(n_hbonds*1.3706551/betti_1)*0.0034584831 - 1*(-0.006076484)` |
-| 11 | 1.734162e-07 | 0.0000 | `sin((cos((n_hbonds * 1.3706551) / betti_1) * 0.003459703) - -0.0060776584)` | `sin(cos(n_hbonds*1.3706551/betti_1)*0.003459703 - 1*(-0.0060776584))` |
-| 12 | 1.728745e-07 | 0.0031 | `(cos((n_hbonds / euler_characteristic) + (-0.835948 / betti_0)) * 0.0056259776) - -0.0082339365` | `cos(n_hbonds/euler_characteristic - 0.835948/betti_0)*0.0056259776 - 1*(-0.0082339365)` |
-| 13 | 1.728655e-07 | 0.0001 | `(0.0059599336 * sin(sin(betti_0 * 0.85399884) + (n_hbonds / euler_characteristic))) - -0.008580461` | `0.0059599336*sin(sin(betti_0*0.85399884) + n_hbonds/euler_characteristic) - 1*(-0.008580461)` |
-| 15 | 1.728534e-07 | 0.0000 | `(sin((cos(-0.85863495 / betti_0) + 0.107865795) + (n_hbonds / euler_characteristic)) * 0.006132256) - -0.008758732` | `sin(cos(-0.85863495/betti_0) + 0.107865795 + n_hbonds/euler_characteristic)*0.006132256 - 1*(-0.008758732)` |
-| 17 | 1.724650e-07 | 0.0011 | `(sin((betti_0 * 0.63641006) + ((n_hbonds - sin(euler_characteristic / -0.22963372)) / euler_characteristic)) * 0.004326784) - -0.0068593933` | `sin(betti_0*0.63641006 + (n_hbonds - sin(euler_characteristic/(-0.22963372)))/euler_characteristic)*0.004326784 - 1*(-0.0068593933)` |
-| 19 | 1.724650e-07 | 0.0000 | `(sin(((euler_characteristic * (betti_0 * 0.63641006)) + (n_hbonds - sin(euler_characteristic / -0.22963372))) / euler_characteristic) * 0.004326784) - -0.0068593933` | `sin((euler_characteristic*betti_0*0.63641006 + n_hbonds - sin(euler_characteristic/(-0.22963372)))/euler_characteristic)*0.004326784 - 1*(-0.0068593933)` |
-| 20 | 1.721848e-07 | 0.0016 | `(sin((betti_0 * 0.63641006) + ((n_hbonds - sin(0.9175627 / sin(euler_characteristic / -0.22963372))) / euler_characteristic)) * 0.004326784) - -0.0068593933` | `sin(betti_0*0.63641006 + (n_hbonds - sin(0.9175627/sin(euler_characteristic/(-0.22963372))))/euler_characteristic)*0.004326784 - 1*(-0.0068593933)` |
+| 4 | 1.806213e-07 | 0.0000 | `sin(0.18348743 / betti_1)` | `sin(0.18348743/betti_1)` |
+| 5 | 1.796604e-07 | 0.0053 | `0.00039524215 - (-0.15820639 / betti_1)` | `0.00039524215 - (-1)*0.15820639/betti_1` |
+| 6 | 1.796582e-07 | 0.0000 | `exp(0.15850994 / betti_1) - 0.9996126` | `exp(0.15850994/betti_1) - 1*0.9996126` |
+| 7 | 1.764989e-07 | 0.0177 | `0.0019408707 / cos(cos(n_hbonds / betti_1))` | `0.0019408707/cos(cos(n_hbonds/betti_1))` |
+| 8 | 1.745114e-07 | 0.0113 | `0.0025485833 / sin((n_hbonds / betti_1) + -0.51930714)` | `0.0025485833/sin(-0.51930714 + n_hbonds/betti_1)` |
+| 9 | 1.735574e-07 | 0.0055 | `0.00259253 / cos(sin((n_hbonds / -0.71361566) / betti_1))` | `0.00259253/cos(sin(n_hbonds/((-0.71361566)*betti_1)))` |
+| 10 | 1.735574e-07 | 0.0000 | `sin(0.00259253 / cos(sin((n_hbonds / -0.71361566) / betti_1)))` | `sin(0.00259253/cos(sin(n_hbonds/((-0.71361566)*betti_1))))` |
+| 11 | 1.723327e-07 | 0.0071 | `0.0023077528 / cos(sin(cos(sin(3.2903008 / (betti_1 / n_hbonds)))))` | `0.0023077528/cos(sin(cos(sin(3.2903008/((betti_1/n_hbonds))))))` |
+| 12 | 1.723327e-07 | 0.0000 | `sin(0.0023077528 / cos(sin(cos(sin(3.2903008 / (betti_1 / n_hbonds))))))` | `sin(0.0023077528/cos(sin(cos(sin(3.2903008/((betti_1/n_hbonds)))))))` |
+| 13 | 1.718300e-07 | 0.0029 | `0.0023077528 / cos(sin(cos(sin(-3.2926533 / (betti_1 / n_hbonds)) * betti_0)))` | `0.0023077528/cos(sin(cos(betti_0*sin(-3.2926533*n_hbonds/betti_1))))` |
+| 19 | 1.717054e-07 | 0.0001 | `sin(0.0023136116 / cos(sin(cos(sin(2.944526 / sin((betti_0 * 1.5294906) / ((n_hbonds / -0.59748983) / betti_1)))))))` | `sin(0.0023136116/cos(sin(cos(sin(2.944526/sin(betti_0*1.5294906/(n_hbonds/((-0.59748983)*betti_1))))))))` |
+| 20 | 1.717054e-07 | 0.0000 | `sin(sin(0.0023136116 / cos(sin(cos(sin(2.944526 / sin((betti_0 * 1.5294906) / ((n_hbonds / -0.59748983) / betti_1))))))))` | `sin(sin(0.0023136116/cos(sin(cos(sin(2.944526/sin(betti_0*1.5294906/(n_hbonds/((-0.59748983)*betti_1)))))))))` |
 
 </details>
 
 <details>
-<summary><b>Run 3 (Seed: 44) — Best Equation: 0.18348595/betti_1</b></summary>
-
-| Complexity | Loss (MSE) | Score | Equation | Sympy Format |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | 2.170629e-07 | 0.0000 | `0.00285358` | `0.00285358000000000` |
-| 3 | 1.806213e-07 | 0.0919 | `0.18348595 / betti_1` | `0.18348595/betti_1` |
-| 5 | 1.796631e-07 | 0.0027 | `(0.15686136 / betti_1) + 0.00041615963` | `0.00041615963 + 0.15686136/betti_1` |
-| 6 | 1.773846e-07 | 0.0128 | `exp(-0.12825847 * betti_1) + 0.0025505102` | `0.0025505102 + exp(-0.12825847*betti_1)` |
-| 7 | 1.768645e-07 | 0.0029 | `((n_hbonds / betti_1) * 0.0016485073) + -0.0013266853` | `-0.0013266853 + n_hbonds*0.0016485073/betti_1` |
-| 8 | 1.767081e-07 | 0.0009 | `exp((betti_1 * -0.109621204) - betti_0) + 0.0025101982` | `exp(-betti_0 + betti_1*(-0.109621204)) + 0.0025101982` |
-| 9 | 1.767080e-07 | 0.0000 | `sin(exp((betti_1 * -0.109621204) - betti_0) + 0.0025101982)` | `sin(exp(-betti_0 + betti_1*(-0.109621204)) + 0.0025101982)` |
-| 10 | 1.766236e-07 | 0.0005 | `exp((-0.11192663 * betti_1) + (0.14121892 - betti_0)) + 0.0025022102` | `exp(-betti_0 - 0.11192663*betti_1 + 0.14121892) + 0.0025022102` |
-| 11 | 1.762356e-07 | 0.0022 | `0.0025505102 + exp((sin(-2.0022027 * betti_1) + betti_1) * -0.12825847)` | `exp((betti_1 + sin(-2.0022027*betti_1))*(-0.12825847)) + 0.0025505102` |
-| 12 | 1.757568e-07 | 0.0027 | `exp((sin(sin(betti_1) * -77.37281) + betti_1) * -0.12846412) + 0.0025459277` | `exp((betti_1 + sin(sin(betti_1)*(-77.37281)))*(-0.12846412)) + 0.0025459277` |
-| 13 | 1.734678e-07 | 0.0131 | `exp((betti_1 * -0.11363874) - sin((n_hbonds - betti_1) * -0.11735462)) + 0.002518173` | `exp(betti_1*(-0.11363874) - sin((-betti_1 + n_hbonds)*(-0.11735462))) + 0.002518173` |
-| 15 | 1.728843e-07 | 0.0017 | `0.002518173 + exp(((betti_1 * -0.11363874) - sin((n_hbonds - betti_1) * -0.11735462)) * betti_0)` | `exp(betti_0*(betti_1*(-0.11363874) - sin((-betti_1 + n_hbonds)*(-0.11735462)))) + 0.002518173` |
-| 17 | 1.728595e-07 | 0.0001 | `exp((betti_1 * -0.11363874) - ((sin((n_hbonds - betti_1) * -0.11735462) * betti_0) * betti_0)) + 0.002518173` | `exp(-betti_0*betti_0*sin((-betti_1 + n_hbonds)*(-0.11735462)) + betti_1*(-0.11363874)) + 0.002518173` |
-| 19 | 1.726206e-07 | 0.0007 | `exp((betti_1 * -0.11759654) - sin(sin(((n_hbonds - betti_1) + cos(betti_1 * -0.4089049)) * -0.11973321))) - -0.002524811` | `exp(betti_1*(-0.11759654) - sin(sin((-betti_1 + n_hbonds + cos(betti_1*(-0.4089049)))*(-0.11973321)))) - 1*(-0.002524811)` |
-| 20 | 1.724873e-07 | 0.0008 | `exp((betti_1 * -0.11770382) - sin(sin(sin(((n_hbonds + cos(betti_1 * 0.40842736)) - betti_1) * -0.11963633)))) - -0.002516426` | `exp(betti_1*(-0.11770382) - sin(sin(sin((-betti_1 + n_hbonds + cos(betti_1*0.40842736))*(-0.11963633))))) - 1*(-0.002516426)` |
-
-</details>
-
-<details>
-<summary><b>Run 4 (Seed: 45) — Best Equation: 0.18348756/betti_1</b></summary>
-
-| Complexity | Loss (MSE) | Score | Equation | Sympy Format |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | 2.170629e-07 | 0.0000 | `0.0028535796` | `0.00285357960000000` |
-| 3 | 1.806213e-07 | 0.0919 | `0.18348756 / betti_1` | `0.18348756/betti_1` |
-| 5 | 1.796604e-07 | 0.0027 | `(0.15819985 / betti_1) - -0.00039539585` | `-1*(-0.00039539585) + 0.15819985/betti_1` |
-| 6 | 1.773857e-07 | 0.0127 | `exp(betti_1 * -0.12812462) + 0.0025466278` | `exp(betti_1*(-0.12812462)) + 0.0025466278` |
-| 8 | 1.767391e-07 | 0.0018 | `exp(betti_0 * (betti_1 * -0.12812626)) + 0.0025499184` | `exp(betti_0*betti_1*(-0.12812626)) + 0.0025499184` |
-| 10 | 1.766649e-07 | 0.0002 | `exp((betti_0 * (euler_characteristic + -5.895808)) * 0.11752906) - -0.0025249156` | `exp(betti_0*(euler_characteristic - 5.895808)*0.11752906) - 1*(-0.0025249156)` |
-| 11 | 1.764441e-07 | 0.0013 | `exp((euler_characteristic + sin(euler_characteristic + n_hbonds)) * 0.13088253) - -0.0025658237` | `exp((euler_characteristic + sin(euler_characteristic + n_hbonds))*0.13088253) - 1*(-0.0025658237)` |
-| 12 | 1.759751e-07 | 0.0027 | `exp((euler_characteristic + sin(exp(betti_1 + 0.69728225))) * 0.13088313) - -0.0025553815` | `exp((euler_characteristic + sin(exp(betti_1 + 0.69728225)))*0.13088313) - 1*(-0.0025553815)` |
-| 13 | 1.755667e-07 | 0.0023 | `exp(0.13088253 * ((euler_characteristic + sin(euler_characteristic + n_hbonds)) * betti_0)) - -0.0025658237` | `exp(0.13088253*betti_0*(euler_characteristic + sin(euler_characteristic + n_hbonds))) - 1*(-0.0025658237)` |
-| 14 | 1.751236e-07 | 0.0025 | `exp(betti_0 * ((euler_characteristic + sin(exp(betti_1 + 0.69728225))) * 0.13088313)) - -0.0025553815` | `exp(betti_0*(euler_characteristic + sin(exp(betti_1 + 0.69728225)))*0.13088313) - 1*(-0.0025553815)` |
-| 15 | 1.750746e-07 | 0.0003 | `exp((sin((euler_characteristic + n_hbonds) / 3.2335002) + (euler_characteristic * betti_0)) * 0.12915088) - -0.002547415` | `exp((betti_0*euler_characteristic + sin((euler_characteristic + n_hbonds)/3.2335002))*0.12915088) - 1*(-0.002547415)` |
-| 16 | 1.750462e-07 | 0.0002 | `exp((betti_0 * 0.13125995) * ((euler_characteristic + sin(exp(betti_1 + 0.6972822))) + 0.55553263)) - -0.002540039` | `exp(betti_0*0.13125995*(euler_characteristic + sin(exp(betti_1 + 0.6972822)) + 0.55553263)) - 1*(-0.002540039)` |
-| 17 | 1.747079e-07 | 0.0019 | `exp(((sin(n_hbonds + euler_characteristic) + sin(exp(betti_1 + 0.69728225))) + euler_characteristic) * 0.13088286) - -0.0025580113` | `exp((euler_characteristic + sin(euler_characteristic + n_hbonds) + sin(exp(betti_1 + 0.69728225)))*0.13088286) - 1*(-0.0025580113)` |
-| 19 | 1.738415e-07 | 0.0025 | `exp((((sin(n_hbonds + euler_characteristic) + sin(exp(betti_1 + 0.69728225))) + euler_characteristic) * 0.13088286) * betti_0) - -0.0025580113` | `exp((euler_characteristic + sin(euler_characteristic + n_hbonds) + sin(exp(betti_1 + 0.69728225)))*0.13088286*betti_0) - 1*(-0.0025580113)` |
-
-</details>
-
-<details>
-<summary><b>Run 5 (Seed: 46) — Best Equation: 0.18348736/betti_1</b></summary>
+<summary><b>Run 3 (Seed: 44) — Best Equation: 0.18348704/betti_1</b></summary>
 
 | Complexity | Loss (MSE) | Score | Equation | Sympy Format |
 | :--- | :--- | :--- | :--- | :--- |
 | 1 | 2.170629e-07 | 0.0000 | `0.0028535798` | `0.00285357980000000` |
-| 3 | 1.806214e-07 | 0.0919 | `0.18348736 / betti_1` | `0.18348736/betti_1` |
-| 4 | 1.806213e-07 | 0.0000 | `sin(0.18348888 / betti_1)` | `sin(0.18348888/betti_1)` |
-| 5 | 1.796604e-07 | 0.0053 | `(0.1581822 / betti_1) + 0.0003956474` | `0.0003956474 + 0.1581822/betti_1` |
-| 6 | 1.780545e-07 | 0.0090 | `exp(betti_1 * -0.13075891) + 0.002593849` | `exp(betti_1*(-0.13075891)) + 0.002593849` |
-| 7 | 1.768643e-07 | 0.0067 | `((n_hbonds / betti_1) * 0.0016491201) + -0.0013277679` | `-0.0013277679 + n_hbonds*0.0016491201/betti_1` |
-| 8 | 1.753595e-07 | 0.0085 | `(exp(n_hbonds / betti_1) * 0.00012913313) + 0.0012113128` | `exp(n_hbonds/betti_1)*0.00012913313 + 0.0012113128` |
-| 9 | 1.753595e-07 | 0.0000 | `sin(0.0012113128 + (exp(n_hbonds / betti_1) * 0.00012913313))` | `sin(exp(n_hbonds/betti_1)*0.00012913313 + 0.0012113128)` |
-| 10 | 1.724521e-07 | 0.0167 | `(cos(n_hbonds / (betti_1 * 0.19043414)) * -0.0004979805) + 0.0031548862` | `0.0031548862 + cos(n_hbonds/((betti_1*0.19043414)))*(-0.0004979805)` |
-| 11 | 1.724521e-07 | 0.0000 | `sin(0.0031548862 + (-0.0004979805 * cos(n_hbonds / (betti_1 * 0.19043414))))` | `sin(0.0031548862 - 0.0004979805*cos(n_hbonds/((betti_1*0.19043414))))` |
-| 12 | 1.718952e-07 | 0.0032 | `(cos((n_hbonds / (betti_0 * euler_characteristic)) / -0.192009) * -0.00046697684) + 0.003106064` | `0.003106064 + cos(n_hbonds/((-0.192009)*((betti_0*euler_characteristic))))*(-0.00046697684)` |
-| 14 | 1.718714e-07 | 0.0001 | `(-0.00045482963 * cos((n_hbonds / (-0.1916945 * (betti_1 + -0.93895835))) / betti_0)) + 0.0030931453` | `0.0030931453 - 0.00045482963*cos(n_hbonds/(betti_0*((-0.1916945*(betti_1 - 0.93895835)))))` |
-| 16 | 1.715017e-07 | 0.0011 | `0.0030849695 + (-0.00044722928 * cos((n_hbonds / ((betti_0 * euler_characteristic) + cos(sin(euler_characteristic)))) / -0.19352506))` | `0.0030849695 - 0.00044722928*cos(n_hbonds/((-0.19352506)*(betti_0*euler_characteristic + cos(sin(euler_characteristic)))))` |
-| 17 | 1.715017e-07 | 0.0000 | `sin(0.0030849695 + (-0.00044722928 * cos((n_hbonds / ((betti_0 * euler_characteristic) + cos(sin(euler_characteristic)))) / -0.19352506)))` | `sin(0.0030849695 - 0.00044722928*cos(n_hbonds/((-0.19352506)*(betti_0*euler_characteristic + cos(sin(euler_characteristic))))))` |
-| 18 | 1.714025e-07 | 0.0006 | `0.0030849695 + (-0.00044722928 * cos((n_hbonds / (cos(sin(0.62277716 - betti_1)) + (euler_characteristic * betti_0))) / -0.19352506))` | `0.0030849695 - 0.00044722928*cos(n_hbonds/((-0.19352506)*(betti_0*euler_characteristic + cos(sin(0.62277716 - betti_1)))))` |
-| 19 | 1.711288e-07 | 0.0016 | `(cos((n_hbonds / ((sin((euler_characteristic + euler_characteristic) + 0.99999344) + euler_characteristic) * betti_0)) / -0.19189969) * -0.00045149607) + 0.0030952215` | `0.0030952215 + cos(n_hbonds/((-0.19189969)*((betti_0*(euler_characteristic + sin(euler_characteristic + euler_characteristic + 0.99999344))))))*(-0.00045149607)` |
-| 20 | 1.708983e-07 | 0.0013 | `(cos((n_hbonds / ((euler_characteristic + sin(sin((euler_characteristic + 0.9451807) + euler_characteristic))) * betti_0)) / -0.192293) * -0.00046935157) + 0.0031116665` | `0.0031116665 + cos(n_hbonds/((-0.192293)*((betti_0*(euler_characteristic + sin(sin(euler_characteristic + euler_characteristic + 0.9451807)))))))*(-0.00046935157)` |
+| 3 | 1.806213e-07 | 0.0919 | `0.18348704 / betti_1` | `0.18348704/betti_1` |
+| 5 | 1.796604e-07 | 0.0027 | `(0.15820564 / betti_1) + 0.00039527568` | `0.00039527568 + 0.15820564/betti_1` |
+| 6 | 1.776563e-07 | 0.0112 | `exp(euler_characteristic * 0.13092798) + 0.0025603233` | `exp(euler_characteristic*0.13092798) + 0.0025603233` |
+| 7 | 1.766363e-07 | 0.0058 | `n_hbonds / ((14.416215 - betti_1) / -0.0008719526)` | `n_hbonds/(((14.416215 - betti_1)/(-0.0008719526)))` |
+| 10 | 1.757250e-07 | 0.0017 | `n_hbonds / (euler_characteristic / (-0.0010780772 - exp(euler_characteristic * 0.16958745)))` | `n_hbonds/((euler_characteristic/(-exp(euler_characteristic*0.16958745) - 0.0010780772)))` |
+| 12 | 1.751845e-07 | 0.0015 | `n_hbonds / (euler_characteristic / (-0.0010768465 - exp((euler_characteristic * 0.16852242) * betti_0)))` | `n_hbonds/((euler_characteristic/(-exp(euler_characteristic*0.16852242*betti_0) - 0.0010768465)))` |
+| 15 | 1.751578e-07 | 0.0001 | `exp(0.15676972 * euler_characteristic) + (n_hbonds / ((euler_characteristic + cos(-0.239109 * euler_characteristic)) / -0.0010918295))` | `n_hbonds/(((euler_characteristic + cos(-0.239109*euler_characteristic))/(-0.0010918295))) + exp(0.15676972*euler_characteristic)` |
+| 16 | 1.715021e-07 | 0.0211 | `(euler_characteristic + n_hbonds) / ((11.774071 / sin((euler_characteristic * -0.13806865) * n_hbonds)) + (euler_characteristic / -0.0018095624))` | `(euler_characteristic + n_hbonds)/(euler_characteristic/(-0.0018095624) + 11.774071/sin(euler_characteristic*(-0.13806865)*n_hbonds))` |
+| 18 | 1.714148e-07 | 0.0003 | `((0.788351 - betti_1) + n_hbonds) / ((11.774071 / sin((n_hbonds * euler_characteristic) * -0.13806865)) + (euler_characteristic / -0.0018095624))` | `(-betti_1 + n_hbonds + 0.788351)/(euler_characteristic/(-0.0018095624) + 11.774071/sin(n_hbonds*euler_characteristic*(-0.13806865)))` |
+| 19 | 1.713336e-07 | 0.0005 | `sin((euler_characteristic + n_hbonds) / ((euler_characteristic / -0.0018133168) - (7.5921736 / (sin((0.0065466356 - euler_characteristic) * n_hbonds) + 0.0026999651))))` | `sin((euler_characteristic + n_hbonds)/(euler_characteristic/(-0.0018133168) - 7.5921736/(sin(n_hbonds*(0.0065466356 - euler_characteristic)) + 0.0026999651)))` |
+| 20 | 1.713335e-07 | 0.0000 | `sin(sin((euler_characteristic + n_hbonds) / ((euler_characteristic / -0.0018133168) - (7.5921736 / (sin((0.0065466356 - euler_characteristic) * n_hbonds) + 0.0026999651)))))` | `sin(sin((euler_characteristic + n_hbonds)/(euler_characteristic/(-0.0018133168) - 7.5921736/(sin(n_hbonds*(0.0065466356 - euler_characteristic)) + 0.0026999651))))` |
+
+</details>
+
+<details>
+<summary><b>Run 4 (Seed: 45) — Best Equation: 0.18348734/betti_1</b></summary>
+
+| Complexity | Loss (MSE) | Score | Equation | Sympy Format |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 2.170629e-07 | 0.0000 | `0.0028535808` | `0.00285358080000000` |
+| 3 | 1.806213e-07 | 0.0919 | `0.18348734 / betti_1` | `0.18348734/betti_1` |
+| 4 | 1.806213e-07 | 0.0000 | `sin(0.18348685 / betti_1)` | `sin(0.18348685/betti_1)` |
+| 5 | 1.796606e-07 | 0.0053 | `(0.15785664 / betti_1) - -0.00040069222` | `-1*(-0.00040069222) + 0.15785664/betti_1` |
+| 6 | 1.773841e-07 | 0.0128 | `exp(betti_1 * -0.1282341) + 0.0025500348` | `exp(betti_1*(-0.1282341)) + 0.0025500348` |
+| 7 | 1.773835e-07 | 0.0000 | `sin(exp(betti_1 * -0.12817253) + 0.0025489859)` | `sin(exp(betti_1*(-0.12817253)) + 0.0025489859)` |
+| 8 | 1.767417e-07 | 0.0036 | `exp((betti_1 * betti_0) * -0.1282327) + 0.0025519948` | `exp(betti_1*betti_0*(-0.1282327)) + 0.0025519948` |
+| 9 | 1.767417e-07 | 0.0000 | `sin(0.0025519948 + exp((betti_1 * betti_0) * -0.1282327))` | `sin(exp(betti_1*betti_0*(-0.1282327)) + 0.0025519948)` |
+| 10 | 1.725966e-07 | 0.0237 | `0.020901145 / (cos(-5.3401866 * (n_hbonds / betti_1)) + 6.889499)` | `0.020901145/(cos(-5.3401866*n_hbonds/betti_1) + 6.889499)` |
+| 11 | 1.725962e-07 | 0.0000 | `sin(0.020901145 / (6.889499 + cos(n_hbonds * (-5.340548 / betti_1))))` | `sin(0.020901145/(cos(n_hbonds*(-5.340548)/betti_1) + 6.889499))` |
+| 12 | 1.718176e-07 | 0.0045 | `0.020938644 / (sin((n_hbonds / betti_0) * (-5.8387 / euler_characteristic)) + 6.889499)` | `0.020938644/(sin(n_hbonds*(-5.8387)/(betti_0*euler_characteristic)) + 6.889499)` |
+| 14 | 1.717778e-07 | 0.0001 | `0.020895302 / (sin(((n_hbonds / betti_0) * -5.8815455) / (euler_characteristic + -0.34945095)) + 6.889499)` | `0.020895302/(sin(n_hbonds*(-5.8815455)/(betti_0*(euler_characteristic - 0.34945095))) + 6.889499)` |
+| 15 | 1.716990e-07 | 0.0005 | `0.020567153 / (sin(sin((((n_hbonds * -5.9821663) / euler_characteristic) + -0.23149696) / betti_0)) + 6.8895802)` | `0.020567153/(sin(sin((-0.23149696 + n_hbonds*(-5.9821663)/euler_characteristic)/betti_0)) + 6.8895802)` |
+| 17 | 1.710536e-07 | 0.0019 | `0.020831557 / (sin(((n_hbonds / betti_0) * -5.8386993) / (euler_characteristic - cos(2.0616803 * euler_characteristic))) + 6.8894997)` | `0.020831557/(sin(n_hbonds*(-5.8386993)/(betti_0*(euler_characteristic - cos(2.0616803*euler_characteristic)))) + 6.8894997)` |
+| 19 | 1.708245e-07 | 0.0007 | `0.020831557 / (sin(((n_hbonds / betti_0) * -5.8386993) / (euler_characteristic - (cos(2.0616803 * euler_characteristic) * 0.5616185))) + 6.8894997)` | `0.020831557/(sin(n_hbonds*(-5.8386993)/(betti_0*(euler_characteristic - 0.5616185*cos(2.0616803*euler_characteristic)))) + 6.8894997)` |
+
+</details>
+
+<details>
+<summary><b>Run 5 (Seed: 46) — Best Equation: 0.18348749/betti_1</b></summary>
+
+| Complexity | Loss (MSE) | Score | Equation | Sympy Format |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | 2.170629e-07 | 0.0000 | `0.0028535794` | `0.00285357940000000` |
+| 3 | 1.806213e-07 | 0.0919 | `0.18348749 / betti_1` | `0.18348749/betti_1` |
+| 4 | 1.806213e-07 | 0.0000 | `sin(0.18348749 / betti_1)` | `sin(0.18348749/betti_1)` |
+| 5 | 1.796604e-07 | 0.0053 | `(0.15820615 / betti_1) - -0.0003952684` | `-1*(-0.0003952684) + 0.15820615/betti_1` |
+| 6 | 1.790100e-07 | 0.0036 | `0.0032363445 / (log(betti_1) + -3.0277834)` | `0.0032363445/(log(betti_1) - 3.0277834)` |
+| 7 | 1.768643e-07 | 0.0121 | `(n_hbonds * (0.0016492336 / betti_1)) - 0.0013280528` | `-1*0.0013280528 + n_hbonds*0.0016492336/betti_1` |
+| 9 | 1.767908e-07 | 0.0002 | `(((0.020480923 / betti_1) - -0.00080611964) * n_hbonds) / betti_1` | `n_hbonds*(-1*(-0.00080611964) + 0.020480923/betti_1)/betti_1` |
+| 10 | 1.753228e-07 | 0.0083 | `0.0043337042 - ((sin(n_hbonds / euler_characteristic) * 0.17909554) / euler_characteristic)` | `0.0043337042 - 0.17909554*sin(n_hbonds/euler_characteristic)/euler_characteristic` |
+| 12 | 1.741725e-07 | 0.0033 | `0.004388292 - (((sin(n_hbonds / betti_1) / euler_characteristic) * -0.0010627937) * n_hbonds)` | `0.004388292 - (-0.0010627937)*n_hbonds*sin(n_hbonds/betti_1)/euler_characteristic` |
+| 13 | 1.739459e-07 | 0.0013 | `0.018114474 - ((n_hbonds / euler_characteristic) * (-0.013336689 - ((n_hbonds * 0.0028707911) / euler_characteristic)))` | `0.018114474 - n_hbonds*(-0.013336689 - 0.0028707911*n_hbonds/euler_characteristic)/euler_characteristic` |
+| 14 | 1.738893e-07 | 0.0003 | `(sin((n_hbonds * (n_hbonds / betti_1)) * (-0.29146758 / euler_characteristic)) * -0.0029280882) + 0.0055693923` | `0.0055693923 + sin(n_hbonds*n_hbonds*(-0.29146758)/(betti_1*euler_characteristic))*(-0.0029280882)` |
+| 15 | 1.729839e-07 | 0.0052 | `0.0034469983 - ((n_hbonds - (betti_1 * 2.806214)) * (0.00013211112 - ((n_hbonds * -6.5617e-5) / euler_characteristic)))` | `0.0034469983 - (0.00013211112 - (-6.5617e-5)*n_hbonds/euler_characteristic)*(-2.806214*betti_1 + n_hbonds)` |
+| 16 | 1.729839e-07 | 0.0000 | `sin(0.0034469983 - ((0.00013211112 - (n_hbonds * (-6.5617e-5 / euler_characteristic))) * (n_hbonds - (betti_1 * 2.806214))))` | `sin(0.0034469983 - (0.00013211112 - (-6.5617e-5)*n_hbonds/euler_characteristic)*(-2.806214*betti_1 + n_hbonds))` |
+| 17 | 1.725982e-07 | 0.0022 | `(euler_characteristic * ((2.7780666e-6 - (n_hbonds * (-1.2809622e-6 / euler_characteristic))) * (n_hbonds - (betti_1 * 2.6949754)))) + 0.0031415739` | `euler_characteristic*(2.7780666e-6 - (-1.2809622e-6)*n_hbonds/euler_characteristic)*(-2.6949754*betti_1 + n_hbonds) + 0.0031415739` |
+| 19 | 1.723715e-07 | 0.0007 | `0.0026431642 - (((-3.1067766e-6 - (n_hbonds * (1.3032618e-6 / euler_characteristic))) * euler_characteristic) * ((n_hbonds - (betti_1 * 2.3769553)) / betti_0))` | `0.0026431642 - euler_characteristic*(-3.1067766e-6 - 1.3032618e-6*n_hbonds/euler_characteristic)*(-2.3769553*betti_1 + n_hbonds)/betti_0` |
 
 </details>
 
