@@ -46,8 +46,13 @@ echo "  Start Time: $(date)"
 echo "============================================================"
 
 # Run the correlation and symbolic regression analysis script
-python -u correlate_topology_and_transport.py --topo-dir topoHBNet-run-ml --proton-dir proton_transfer_results --output-dir topology_transport_correlation_results --run-pysr --equil-start-frame 4000
-
+python -u correlate_topology_and_transport.py \
+    --topo-dir topoHBNet-run-ml \
+    --proton-dir proton_transfer_results \
+    --output-dir topology_transport_correlation_results \
+    --equil-start-frame 4000 \
+    --n-clusters 0 \
+    --run-pysr
 
 EXIT_CODE=$?
 

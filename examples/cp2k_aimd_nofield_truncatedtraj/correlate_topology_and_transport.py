@@ -32,6 +32,7 @@ try:
     from sklearn.cluster import KMeans
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.preprocessing import StandardScaler
+    from sklearn.metrics import silhouette_score
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -55,27 +56,27 @@ def parse_args():
                         help='Directory containing proton transfer and dynamics results')
     parser.add_argument('--output-dir', '-o', type=str, default='topology_transport_correlation_results',
                         help='Output directory for correlation analysis')
-    parser.add_argument('--n-clusters', type=int, default=3,
-                        help='Number of K-Means clusters for topological states')
+    parser.add_argument('--n-clusters', type=int, default=0,
+                        help='Number of K-Means clusters for topological states (0 means auto-select based on Silhouette Score)')
     parser.add_argument('--run-pysr', action='store_true',
                         help='Run Symbolic Regression to discover explicit physical laws')
-    parser.add_argument('--pysr-iterations', type=int, default=10000,
+    parser.add_argument('--pysr-iterations', type=int, default=500,
                         help='Number of iterations/generations for PySR symbolic regression')
-    parser.add_argument('--pysr-runs', type=int, default=50,
+    parser.add_argument('--pysr-runs', type=int, default=10,
                         help='Number of independent PySR runs for stability and voting cross-validation')
     
     # GA algorithm parameters
-    parser.add_argument('--pysr-populations', type=int, default=30,
+    parser.add_argument('--pysr-populations', type=int, default=300,
                         help='Number of separate populations/islands to evolve')
     parser.add_argument('--pysr-population-size', type=int, default=50,
                         help='Number of equations in each population')
-    parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=1000,
+    parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=800,
                         help='Number of evolutionary cycles per iteration')
     parser.add_argument('--pysr-maxsize', type=int, default=20,
                         help='Maximum complexity/nodes for discovered equations')
     parser.add_argument('--pysr-crossover-prob', type=float, default=0.06,
                         help='Crossover probability for genetic evolution')
-    parser.add_argument('--pysr-parsimony', type=float, default=0.003,
+    parser.add_argument('--pysr-parsimony', type=float, default=0.005,
                         help='Parsimony/complexity penalty weight')
     parser.add_argument('--pysr-weight-mutate-constant', type=float, default=1.0,
                         help='Relative weight of mutating constants')
@@ -209,19 +210,70 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
         print("  [Warning] scikit-learn is not installed. Skipping K-Means state analysis.")
         return {}
 
-    # 1. K-Means Clustering on TNN PC1 and PC2 (Topological Space)
+    # 1. Prepare features
     features = df[["PC1", "PC2"]].values
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features)
-
-    kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+    
+    # 2. Automated K-Means Diagnostic Loop (PNAS Standard)
+    print("\n  [Clustering] Running Silhouette and Elbow diagnostics for K in [2, 8]...")
+    k_range = range(2, 9)
+    inertias = []
+    sil_scores = []
+    
+    # We sample if the dataset is too large to speed up silhouette score calculation
+    sample_size = min(6000, len(features_scaled)) 
+    
+    for k in k_range:
+        km = KMeans(n_clusters=k, random_state=42, n_init=10)
+        labels = km.fit_predict(features_scaled)
+        inertias.append(km.inertia_)
+        # Silhouette score can be expensive, use sample if needed
+        sil = silhouette_score(features_scaled, labels, sample_size=sample_size, random_state=42)
+        sil_scores.append(sil)
+        
+    optimal_k_auto = k_range[np.argmax(sil_scores)]
+    print(f"  [Clustering] Max Silhouette Score achieved at K={optimal_k_auto} (Score: {max(sil_scores):.4f})")
+    
+    # 3. Plot Diagnostics
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    ax1.plot(k_range, inertias, 'o-', color='#3498DB', linewidth=2)
+    ax1.set_xlabel("Number of Clusters (K)", fontsize=11)
+    ax1.set_ylabel("Inertia (WCSS)", fontsize=11)
+    ax1.set_title("Elbow Method Diagnostic", fontsize=12, fontweight='bold')
+    ax1.grid(True, alpha=0.3)
+    
+    ax2.plot(k_range, sil_scores, 's-', color='#E74C3C', linewidth=2)
+    ax2.axvline(optimal_k_auto, color='gray', linestyle='--', alpha=0.7, label=f'Optimal K={optimal_k_auto}')
+    ax2.set_xlabel("Number of Clusters (K)", fontsize=11)
+    ax2.set_ylabel("Silhouette Score", fontsize=11)
+    ax2.set_title("Silhouette Score Diagnostic", fontsize=12, fontweight='bold')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    diag_png = output_dir / "topological_clustering_diagnostics.png"
+    plt.savefig(diag_png, dpi=300)
+    plt.close()
+    
+    # 4. Determine final K to use
+    if n_clusters <= 0:
+        print(f"\n  [Physics Warning] Auto-selected K={optimal_k_auto} based on max Silhouette.")
+        print(f"                    Please check {diag_png.name} to ensure it doesn't over-split a single metastable physical basin!")
+        final_k = optimal_k_auto
+    else:
+        print(f"\n  [Clustering] Using user-specified K={n_clusters} (Overriding auto-optimal K={optimal_k_auto}).")
+        final_k = n_clusters
+        
+    # 5. Final K-Means Clustering on TNN PC1 and PC2 (Topological Space)
+    kmeans = KMeans(n_clusters=final_k, random_state=42, n_init=10)
     df["Topological_State"] = kmeans.fit_predict(features_scaled)
 
-    # 2. Plot Clusters in TNN Space
+    # 6. Plot Clusters in TNN Space
     plt.figure(figsize=(8, 6.5))
-    colors = ['#3498DB', '#E74C3C', '#2ECC71', '#F1C40F', '#9B59B6']
+    colors = ['#3498DB', '#E74C3C', '#2ECC71', '#F1C40F', '#9B59B6', '#E67E22', '#1ABC9C', '#34495E']
     
-    for cluster_id in range(n_clusters):
+    for cluster_id in range(final_k):
         cluster_data = df[df["Topological_State"] == cluster_id]
         plt.scatter(cluster_data["PC1"], cluster_data["PC2"],
                     color=colors[cluster_id % len(colors)],
@@ -229,7 +281,7 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
 
     plt.xlabel("Topological Embedding PC1", fontsize=11)
     plt.ylabel("Topological Embedding PC2", fontsize=11)
-    plt.title("H-Bond Network States in Topological Embedding Space", fontsize=12, fontweight='bold')
+    plt.title(f"H-Bond Network States in Topological Embedding Space (K={final_k})", fontsize=12, fontweight='bold')
     plt.legend(title="Topological State")
     plt.grid(True, alpha=0.2)
     plt.tight_layout()
@@ -237,13 +289,13 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     plt.savefig(cluster_png, dpi=300)
     plt.close()
 
-    # 3. Profiling Transport Properties for each state
+    # 7. Profiling Transport Properties for each state
     state_profiles = df.groupby("Topological_State")[
         ["LBHB_Fraction", "Avg_Wire_Length", "Hodge_Gradient_Pct", "Hodge_Curl_Pct", "n_hbonds"]
     ].mean()
 
     print("\n" + "-"*50)
-    print("TOPOLOGICAL STATES & TRANSPORT PROFILES (K-Means Mean)")
+    print(f"TOPOLOGICAL STATES & TRANSPORT PROFILES (K-Means Mean, K={final_k})")
     print("-"*50)
     print(state_profiles.to_string())
     print("-"*50)
