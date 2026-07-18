@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import warnings
 
-# Optional heavy dependencies for scientific ML and discovery
 try:
     import pysr
     from pysr import PySRRegressor
@@ -15,14 +14,6 @@ try:
     HAS_PYSINDY = True
 except ImportError:
     HAS_PYSINDY = False
-
-try:
-    import torch
-    import torch.nn as nn
-    from torch_geometric.nn import MessagePassing
-    HAS_TORCH = True
-except ImportError:
-    HAS_TORCH = False
 
 
 class SymbolicRegressor:
@@ -188,7 +179,11 @@ class HodgeLaplacianGNN:
     Useful for directly learning and predicting gradient/curl flows in the H-bond network.
     """
     def __init__(self):
-        if not HAS_TORCH:
+        try:
+            import torch
+            import torch.nn as nn
+            from torch_geometric.nn import MessagePassing
+        except ImportError:
             raise ImportError("PyTorch and PyTorch Geometric are required for HodgeLaplacianGNN.")
         warnings.warn("HodgeLaplacianGNN is a skeleton class meant to be subclassed or implemented dynamically based on specific network structures.")
 

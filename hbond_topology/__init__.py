@@ -7,17 +7,6 @@ and TopoEmbedX libraries.
 __version__ = "0.4.0"
 __author__ = "SIQI TANG"
 
-# To avoid a known segmentation fault caused by loading PyTorch before JuliaCall,
-# we attempt to import PySR/juliacall first if they exist in the environment.
-# See: https://github.com/pytorch/pytorch/issues/78829
-try:
-    import pysr
-except ImportError:
-    try:
-        import juliacall
-    except ImportError:
-        pass
-
 
 # Core modules (always available)
 from .io.trajectory_parser import TrajectoryParser

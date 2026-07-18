@@ -1,29 +1,29 @@
 """Learning module for Topological Neural Networks and Physics Discovery."""
 
-__all__ = []
+__all__ = [
+    "HBondTNN", "HBondGNN", "train_tnn", "prepare_tnn_data", 
+    "GNNEnhancedTNN", "prepare_gnn_tnn_data", "train_gnn_enhanced_tnn",
+    "SymbolicRegressor", "DynamicsIdentifier", "HodgeLaplacianGNN"
+]
 
-# Optional TNN models (requires topomodelx)
-try:
-    from .tnn_model import HBondTNN, HBondGNN, train_tnn, prepare_tnn_data
-    __all__.extend(["HBondTNN", "HBondGNN", "train_tnn", "prepare_tnn_data"])
-except ImportError:
-    pass
-
-# Optional: GNN-Enhanced TNN
-try:
-    from .gnn_enhanced_tnn import (
-        GNNEnhancedTNN,
-        prepare_gnn_tnn_data,
-        train_gnn_enhanced_tnn
-    )
-    __all__.extend(["GNNEnhancedTNN", "prepare_gnn_tnn_data", "train_gnn_enhanced_tnn"])
-except ImportError:
-    pass
-
-# Optional: Discovery models (requires pysr, pysindy, etc.)
-try:
-    from .discovery import SymbolicRegressor, DynamicsIdentifier, HodgeLaplacianGNN
-    __all__.extend(["SymbolicRegressor", "DynamicsIdentifier", "HodgeLaplacianGNN"])
-except ImportError:
-    pass
-
+def __getattr__(name):
+    if name in ["HBondTNN", "HBondGNN", "train_tnn", "prepare_tnn_data"]:
+        from .tnn_model import HBondTNN, HBondGNN, train_tnn, prepare_tnn_data
+        if name == "HBondTNN": return HBondTNN
+        if name == "HBondGNN": return HBondGNN
+        if name == "train_tnn": return train_tnn
+        if name == "prepare_tnn_data": return prepare_tnn_data
+        
+    elif name in ["GNNEnhancedTNN", "prepare_gnn_tnn_data", "train_gnn_enhanced_tnn"]:
+        from .gnn_enhanced_tnn import GNNEnhancedTNN, prepare_gnn_tnn_data, train_gnn_enhanced_tnn
+        if name == "GNNEnhancedTNN": return GNNEnhancedTNN
+        if name == "prepare_gnn_tnn_data": return prepare_gnn_tnn_data
+        if name == "train_gnn_enhanced_tnn": return train_gnn_enhanced_tnn
+        
+    elif name in ["SymbolicRegressor", "DynamicsIdentifier", "HodgeLaplacianGNN"]:
+        from .discovery import SymbolicRegressor, DynamicsIdentifier, HodgeLaplacianGNN
+        if name == "SymbolicRegressor": return SymbolicRegressor
+        if name == "DynamicsIdentifier": return DynamicsIdentifier
+        if name == "HodgeLaplacianGNN": return HodgeLaplacianGNN
+        
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
