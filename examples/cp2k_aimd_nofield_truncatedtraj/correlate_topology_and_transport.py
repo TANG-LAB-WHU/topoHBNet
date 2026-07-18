@@ -59,15 +59,15 @@ def parse_args():
                         help='Number of K-Means clusters for topological states')
     parser.add_argument('--run-pysr', action='store_true',
                         help='Run Symbolic Regression to discover explicit physical laws')
-    parser.add_argument('--pysr-iterations', type=int, default=500,
+    parser.add_argument('--pysr-iterations', type=int, default=5000,
                         help='Number of iterations/generations for PySR symbolic regression')
-    parser.add_argument('--pysr-runs', type=int, default=5,
+    parser.add_argument('--pysr-runs', type=int, default=50,
                         help='Number of independent PySR runs for stability and voting cross-validation')
     
     # GA algorithm parameters
-    parser.add_argument('--pysr-populations', type=int, default=15,
+    parser.add_argument('--pysr-populations', type=int, default=30,
                         help='Number of separate populations/islands to evolve')
-    parser.add_argument('--pysr-population-size', type=int, default=33,
+    parser.add_argument('--pysr-population-size', type=int, default=50,
                         help='Number of equations in each population')
     parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=550,
                         help='Number of evolutionary cycles per iteration')
@@ -75,7 +75,7 @@ def parse_args():
                         help='Maximum complexity/nodes for discovered equations')
     parser.add_argument('--pysr-crossover-prob', type=float, default=0.06,
                         help='Crossover probability for genetic evolution')
-    parser.add_argument('--pysr-parsimony', type=float, default=0.001,
+    parser.add_argument('--pysr-parsimony', type=float, default=0.003,
                         help='Parsimony/complexity penalty weight')
     parser.add_argument('--pysr-weight-mutate-constant', type=float, default=1.0,
                         help='Relative weight of mutating constants')
@@ -469,7 +469,10 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
             best_consensus_eq = most_common_eqs[0][0]
             f.write(f"> [!IMPORTANT]\n")
             f.write(f"> **Consensus Physical Law Discovered:**\n")
-            f.write(f"> $${target_var} \\approx {best_consensus_eq}$$\n")
+            # Escape underscores for LaTeX rendering so variables don't become subscripts
+            latex_target = target_var.replace('_', '\\_')
+            latex_eq = best_consensus_eq.replace('_', '\\_')
+            f.write(f"> $${latex_target} \\approx {latex_eq}$$\n")
             f.write(f"> This equation emerged as the consensus choice across the independent runs, indicating its high stability and generalizability to represent the governing physical chemistry.\n\n")
             
             f.write(f"## 3. Topological Invariant Feature Stability Selection\n")
@@ -488,7 +491,22 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
             sorted_features = sorted(feature_counts.items(), key=lambda x: x[1], reverse=True)
             for feat, count in sorted_features:
                 stability = (count / total_equations) * 100 if total_equations > 0 else 0.0
-                desc = descriptions.get(feat, "Topological descriptor")
+                
+                # Dynamic description for state descriptors
+                if feat.startswith("state_") and "D" in feat and "A" in feat:
+                    try:
+                        d_val = feat.split("D")[0].split("_")[1]
+                        a_val = feat.split("A")[0].split("D")[1]
+                        desc = f"Water donating {d_val} and accepting {a_val} H-bonds"
+                        if d_val == "1" and a_val == "1":
+                            desc += " (wire/chain intermediate)"
+                        elif a_val == "0" and int(d_val) >= 2:
+                            desc += " (extreme donor defect)"
+                    except:
+                        desc = "Topological state descriptor"
+                else:
+                    desc = descriptions.get(feat, "Topological descriptor")
+                    
                 priority = "🔥 High" if stability > 70 else ("⚡ Medium" if stability > 30 else "❄️ Low")
                 f.write(f"| `{feat}` | {desc} | {count}/{total_equations} | {stability:.1f}% | {priority} |\n")
             f.write(f"\n")

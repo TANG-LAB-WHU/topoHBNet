@@ -59,15 +59,15 @@ def parse_args():
                         help='Number of K-Means clusters for topological states')
     parser.add_argument('--run-pysr', action='store_true',
                         help='Run Symbolic Regression to discover explicit physical laws')
-    parser.add_argument('--pysr-iterations', type=int, default=500,
+    parser.add_argument('--pysr-iterations', type=int, default=5000,
                         help='Number of iterations/generations for PySR symbolic regression')
-    parser.add_argument('--pysr-runs', type=int, default=5,
+    parser.add_argument('--pysr-runs', type=int, default=50,
                         help='Number of independent PySR runs for stability and voting cross-validation')
     
     # GA algorithm parameters
-    parser.add_argument('--pysr-populations', type=int, default=15,
+    parser.add_argument('--pysr-populations', type=int, default=30,
                         help='Number of separate populations/islands to evolve')
-    parser.add_argument('--pysr-population-size', type=int, default=33,
+    parser.add_argument('--pysr-population-size', type=int, default=50,
                         help='Number of equations in each population')
     parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=550,
                         help='Number of evolutionary cycles per iteration')
@@ -75,7 +75,7 @@ def parse_args():
                         help='Maximum complexity/nodes for discovered equations')
     parser.add_argument('--pysr-crossover-prob', type=float, default=0.06,
                         help='Crossover probability for genetic evolution')
-    parser.add_argument('--pysr-parsimony', type=float, default=0.001,
+    parser.add_argument('--pysr-parsimony', type=float, default=0.003,
                         help='Parsimony/complexity penalty weight')
     parser.add_argument('--pysr-weight-mutate-constant', type=float, default=1.0,
                         help='Relative weight of mutating constants')
@@ -130,6 +130,34 @@ def load_datasets(topo_dir: Path, proton_dir: Path):
     # First merge topological datasets (they are typically perfectly aligned)
     df_topo_merged = pd.merge_asof(df_topo, df_pca, on="Time_fs", direction="nearest")
 
+    # Add dynamic microscopic water states
+    state_cols = []
+    states_raw_csv = topo_dir / "raw_data_csv" / "water_states_raw.csv"
+    if states_raw_csv.exists():
+        print(f"Loading dynamic water states from: {states_raw_csv}")
+        df_states = pd.read_csv(states_raw_csv)
+        total_atoms = df_states.groupby('frame_idx')['atom_idx'].count()
+        states_counts = df_states.groupby(['frame_idx', 'state']).size().unstack(fill_value=0)
+        states_pct = states_counts.div(total_atoms, axis=0) * 100
+        
+        # Format column names for clarity in machine learning
+        states_pct.columns = [f"state_{c}" for c in states_pct.columns]
+        state_cols = list(states_pct.columns)
+        states_pct = states_pct.reset_index()
+        
+        # Align frame_idx to Time_fs
+        unique_frames = sorted(states_pct['frame_idx'].unique())
+        time_fs_values = df_topo['Time_fs'].sort_values().values
+        
+        if len(unique_frames) == len(time_fs_values):
+            frame_to_time = dict(zip(unique_frames, time_fs_values))
+            states_pct['Time_fs'] = states_pct['frame_idx'].map(frame_to_time)
+        else:
+            print("  [Warning] frame count mismatch between topology and water states. Using dt=0.5 fs fallback.")
+            states_pct['Time_fs'] = states_pct['frame_idx'] * 0.5
+            
+        df_topo_merged = pd.merge_asof(df_topo_merged, states_pct.sort_values('Time_fs'), on="Time_fs", direction="nearest")
+
     # Then merge with proton dynamics
     df_merged = pd.merge_asof(df_topo_merged, df_proton, on="Time_fs", direction="nearest")
 
@@ -138,7 +166,7 @@ def load_datasets(topo_dir: Path, proton_dir: Path):
         df_merged = df_merged.drop(columns=["Frame"])
 
     print(f"Successfully aligned and merged dataset: {df_merged.shape[0]} frames.")
-    return df_merged
+    return df_merged, state_cols
 
 
 def plot_correlation_heatmap(df: pd.DataFrame, topo_cols: list, transport_cols: list, output_path: Path):
@@ -441,7 +469,10 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
             best_consensus_eq = most_common_eqs[0][0]
             f.write(f"> [!IMPORTANT]\n")
             f.write(f"> **Consensus Physical Law Discovered:**\n")
-            f.write(f"> $${target_var} \\approx {best_consensus_eq}$$\n")
+            # Escape underscores for LaTeX rendering so variables don't become subscripts
+            latex_target = target_var.replace('_', '\\_')
+            latex_eq = best_consensus_eq.replace('_', '\\_')
+            f.write(f"> $${latex_target} \\approx {latex_eq}$$\n")
             f.write(f"> This equation emerged as the consensus choice across the independent runs, indicating its high stability and generalizability to represent the governing physical chemistry.\n\n")
             
             f.write(f"## 3. Topological Invariant Feature Stability Selection\n")
@@ -460,7 +491,22 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
             sorted_features = sorted(feature_counts.items(), key=lambda x: x[1], reverse=True)
             for feat, count in sorted_features:
                 stability = (count / total_equations) * 100 if total_equations > 0 else 0.0
-                desc = descriptions.get(feat, "Topological descriptor")
+                
+                # Dynamic description for state descriptors
+                if feat.startswith("state_") and "D" in feat and "A" in feat:
+                    try:
+                        d_val = feat.split("D")[0].split("_")[1]
+                        a_val = feat.split("A")[0].split("D")[1]
+                        desc = f"Water donating {d_val} and accepting {a_val} H-bonds"
+                        if d_val == "1" and a_val == "1":
+                            desc += " (wire/chain intermediate)"
+                        elif a_val == "0" and int(d_val) >= 2:
+                            desc += " (extreme donor defect)"
+                    except:
+                        desc = "Topological state descriptor"
+                else:
+                    desc = descriptions.get(feat, "Topological descriptor")
+                    
                 priority = "🔥 High" if stability > 70 else ("⚡ Medium" if stability > 30 else "❄️ Low")
                 f.write(f"| `{feat}` | {desc} | {count}/{total_equations} | {stability:.1f}% | {priority} |\n")
             f.write(f"\n")
@@ -503,7 +549,7 @@ def main():
 
     # 1. Load and merge datasets
     try:
-        df = load_datasets(topo_dir, proton_dir)
+        df, state_cols = load_datasets(topo_dir, proton_dir)
     except Exception as e:
         print(f"Error loading datasets: {e}")
         print("Please check that both --topo-dir and --proton-dir have completed run-ml/timeseries files.")
@@ -539,6 +585,8 @@ def main():
 
     # Columns of interest
     topo_cols = ["n_hbonds", "betti_0", "betti_1", "betti_2", "euler_characteristic", "PC1", "PC2"]
+    if state_cols:
+        topo_cols.extend(state_cols)
     transport_cols = ["LBHB_Fraction", "Avg_Wire_Length", "Hodge_Gradient_Pct", "Hodge_Curl_Pct", "Hodge_Harmonic_Pct"]
 
     # Save aligned dataset to CSV
