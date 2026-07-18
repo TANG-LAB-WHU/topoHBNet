@@ -59,7 +59,7 @@ def parse_args():
                         help='Number of K-Means clusters for topological states')
     parser.add_argument('--run-pysr', action='store_true',
                         help='Run Symbolic Regression to discover explicit physical laws')
-    parser.add_argument('--pysr-iterations', type=int, default=5000,
+    parser.add_argument('--pysr-iterations', type=int, default=10000,
                         help='Number of iterations/generations for PySR symbolic regression')
     parser.add_argument('--pysr-runs', type=int, default=50,
                         help='Number of independent PySR runs for stability and voting cross-validation')
@@ -69,7 +69,7 @@ def parse_args():
                         help='Number of separate populations/islands to evolve')
     parser.add_argument('--pysr-population-size', type=int, default=50,
                         help='Number of equations in each population')
-    parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=550,
+    parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=1000,
                         help='Number of evolutionary cycles per iteration')
     parser.add_argument('--pysr-maxsize', type=int, default=20,
                         help='Maximum complexity/nodes for discovered equations')
