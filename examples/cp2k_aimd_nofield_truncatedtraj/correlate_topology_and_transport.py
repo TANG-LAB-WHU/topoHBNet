@@ -130,6 +130,34 @@ def load_datasets(topo_dir: Path, proton_dir: Path):
     # First merge topological datasets (they are typically perfectly aligned)
     df_topo_merged = pd.merge_asof(df_topo, df_pca, on="Time_fs", direction="nearest")
 
+    # Add dynamic microscopic water states
+    state_cols = []
+    states_raw_csv = topo_dir / "raw_data_csv" / "water_states_raw.csv"
+    if states_raw_csv.exists():
+        print(f"Loading dynamic water states from: {states_raw_csv}")
+        df_states = pd.read_csv(states_raw_csv)
+        total_atoms = df_states.groupby('frame_idx')['atom_idx'].count()
+        states_counts = df_states.groupby(['frame_idx', 'state']).size().unstack(fill_value=0)
+        states_pct = states_counts.div(total_atoms, axis=0) * 100
+        
+        # Format column names for clarity in machine learning
+        states_pct.columns = [f"state_{c}" for c in states_pct.columns]
+        state_cols = list(states_pct.columns)
+        states_pct = states_pct.reset_index()
+        
+        # Align frame_idx to Time_fs
+        unique_frames = sorted(states_pct['frame_idx'].unique())
+        time_fs_values = df_topo['Time_fs'].sort_values().values
+        
+        if len(unique_frames) == len(time_fs_values):
+            frame_to_time = dict(zip(unique_frames, time_fs_values))
+            states_pct['Time_fs'] = states_pct['frame_idx'].map(frame_to_time)
+        else:
+            print("  [Warning] frame count mismatch between topology and water states. Using dt=0.5 fs fallback.")
+            states_pct['Time_fs'] = states_pct['frame_idx'] * 0.5
+            
+        df_topo_merged = pd.merge_asof(df_topo_merged, states_pct.sort_values('Time_fs'), on="Time_fs", direction="nearest")
+
     # Then merge with proton dynamics
     df_merged = pd.merge_asof(df_topo_merged, df_proton, on="Time_fs", direction="nearest")
 
@@ -138,7 +166,7 @@ def load_datasets(topo_dir: Path, proton_dir: Path):
         df_merged = df_merged.drop(columns=["Frame"])
 
     print(f"Successfully aligned and merged dataset: {df_merged.shape[0]} frames.")
-    return df_merged
+    return df_merged, state_cols
 
 
 def plot_correlation_heatmap(df: pd.DataFrame, topo_cols: list, transport_cols: list, output_path: Path):
@@ -503,7 +531,7 @@ def main():
 
     # 1. Load and merge datasets
     try:
-        df = load_datasets(topo_dir, proton_dir)
+        df, state_cols = load_datasets(topo_dir, proton_dir)
     except Exception as e:
         print(f"Error loading datasets: {e}")
         print("Please check that both --topo-dir and --proton-dir have completed run-ml/timeseries files.")
@@ -539,6 +567,8 @@ def main():
 
     # Columns of interest
     topo_cols = ["n_hbonds", "betti_0", "betti_1", "betti_2", "euler_characteristic", "PC1", "PC2"]
+    if state_cols:
+        topo_cols.extend(state_cols)
     transport_cols = ["LBHB_Fraction", "Avg_Wire_Length", "Hodge_Gradient_Pct", "Hodge_Curl_Pct", "Hodge_Harmonic_Pct"]
 
     # Save aligned dataset to CSV
