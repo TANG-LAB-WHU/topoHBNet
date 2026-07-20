@@ -115,15 +115,15 @@ def classify_fragment(frag_indices: list[int], elements: np.ndarray, bonds: Opti
 # ─── Core analysis ───────────────────────────────────────────────────────────
 
 # Default bond distance thresholds (Å) for substrate bond types
-# These ensure substrate atoms (Si, C) are properly grouped into fragments
-# so they get excluded from H/O species counting.
+# Raised to 1.85 Å for C-O/C-C and 2.15 Å for Si-O to prevent artificial fragment
+# detachment caused by AIMD thermal vibrations (>300K), eliminating pseudo-H2O2 and pseudo-*OH noise.
 SUBSTRATE_BOND_THRESHOLDS = {
-    ("C", "H"): 1.2,    # C-H covalent bond
-    ("Si", "O"): 2.0,   # Si-O covalent bond
-    ("Si", "C"): 2.0,   # Si-C covalent bond
-    ("Si", "H"): 1.7,   # Si-H covalent bond (rare)
-    ("C", "C"): 1.7,    # C-C covalent bond
-    ("C", "O"): 1.6,    # C-O covalent bond
+    ("C", "H"): 1.30,    # C-H covalent bond (1.09 Å equilibrium + thermal margin)
+    ("Si", "O"): 2.15,   # Si-O covalent bond (1.63 Å equilibrium + thermal margin)
+    ("Si", "C"): 2.15,   # Si-C covalent bond
+    ("Si", "H"): 1.80,   # Si-H covalent bond
+    ("C", "C"): 1.85,    # C-C covalent bond (1.54 Å equilibrium + thermal margin)
+    ("C", "O"): 1.85,    # C-O covalent bond (1.43 Å equilibrium + thermal margin)
 }
 
 
