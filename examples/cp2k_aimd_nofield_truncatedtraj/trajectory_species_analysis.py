@@ -44,8 +44,15 @@ SPECIES_RULES = {
     (3, 1): "H3O+",
     (1, 2): "HO2*",
     (2, 2): "H2O2",
-    (3, 2): "H3O2-",    # Zundel-like
+    (3, 2): "H3O2-",    # Zundel-like anion / bi-hydroxide
+    (5, 2): "H5O2+",    # Zundel cation
     (4, 2): "(H2O)2",   # water dimer
+    (7, 3): "H7O3+",    # Intermediate hydrated proton
+    (6, 3): "(H2O)3",   # water trimer
+    (9, 4): "H9O4+",    # Eigen cation
+    (5, 3): "H5O3-",    # Hydrated hydroxide anion
+    (7, 4): "H7O4-",    # Eigen anion
+    (8, 4): "(H2O)4",   # water tetramer
 }
 
 # Species that always appear in the output CSV, even if count is 0.
@@ -53,29 +60,49 @@ SPECIES_RULES = {
 TRACKED_SPECIES = list(SPECIES_RULES.values())
 
 
-def classify_fragment(elements: list[str]) -> str:
-    """Classify a molecular fragment by its atomic composition.
+def classify_fragment(frag_indices: list[int], elements: np.ndarray, bonds: Optional[np.ndarray] = None) -> str:
+    """Classify a molecular fragment by its atomic composition and bond topology.
 
     Only considers H and O atoms. Fragments containing other elements
     (Si, C, etc.) are classified separately.
 
     Parameters
     ----------
-    elements : list of str
-        Element symbols for each atom in the fragment.
+    frag_indices : list of int
+        Atom indices in the fragment.
+    elements : ndarray of str
+        Element symbols for all atoms in system.
+    bonds : ndarray of shape (M, 2), optional
+        Detected bonds for topological verification.
 
     Returns
     -------
     str
         Species name.
     """
-    n_H = elements.count("H")
-    n_O = elements.count("O")
-    n_other = len(elements) - n_H - n_O
+    frag_elems = [elements[i] for i in frag_indices]
+    n_H = frag_elems.count("H")
+    n_O = frag_elems.count("O")
+    n_other = len(frag_elems) - n_H - n_O
 
     if n_other > 0:
         # Fragment contains non-H/O atoms (e.g., Si, C) — surface/substrate
-        return f"other({len(elements)})"
+        return f"other({len(frag_elems)})"
+
+    # Topological verification for (2, 2) H2O2 vs (H2O)2 dimer
+    if n_H == 2 and n_O == 2:
+        has_oo_bond = False
+        if bonds is not None and len(bonds) > 0:
+            frag_set = set(frag_indices)
+            o_indices = {i for i in frag_indices if elements[i] == "O"}
+            for b1, b2 in bonds:
+                if b1 in o_indices and b2 in o_indices:
+                    has_oo_bond = True
+                    break
+        if has_oo_bond:
+            return "H2O2"
+        else:
+            return "(H2O)2"
 
     species = SPECIES_RULES.get((n_H, n_O))
     if species is not None:
@@ -142,9 +169,9 @@ def detect_bonds_frame(
     positions: np.ndarray,
     elements: np.ndarray,
     box: Optional[np.ndarray],
-    r_oh: float = 1.2,
-    r_oo: float = 1.6,
-    r_hh: float = 0.9,
+    r_oh: float = 1.25,
+    r_oo: float = 1.60,
+    r_hh: float = 0.80,
 ) -> np.ndarray:
     """Detect bonds based on distance thresholds for a single frame.
 
@@ -292,7 +319,7 @@ def analyze_frame(
             if has_other:
                 continue
 
-        species = classify_fragment(frag_elements)
+        species = classify_fragment(frag_indices, elements, bonds)
         species_count[species] += 1
 
     return dict(species_count)
@@ -382,9 +409,9 @@ def parse_cp2k_cell_file(cell_path: str, verbose: bool = True) -> list[float]:
 def run_analysis(
     xyz_path: str,
     cell: Optional[list[float]] = None,
-    r_oh: float = 1.2,
-    r_oo: float = 1.6,
-    r_hh: float = 0.9,
+    r_oh: float = 1.25,
+    r_oo: float = 1.60,
+    r_hh: float = 0.80,
     stride: int = 1,
     start_frame: int = 0,
     timestep: Optional[float] = None,
@@ -687,16 +714,16 @@ def parse_args():
              "Ignored if --cell is specified.",
     )
     parser.add_argument(
-        "--roh", type=float, default=1.2,
-        help="O-H bond distance threshold in Å (default: 1.2)",
+        "--roh", type=float, default=1.25,
+        help="O-H bond distance threshold in Å (default: 1.25)",
     )
     parser.add_argument(
-        "--roo", type=float, default=1.6,
-        help="O-O bond distance threshold in Å (default: 1.6)",
+        "--roo", type=float, default=1.60,
+        help="O-O bond distance threshold in Å (default: 1.60)",
     )
     parser.add_argument(
-        "--rhh", type=float, default=0.9,
-        help="H-H bond distance threshold in Å (default: 0.9)",
+        "--rhh", type=float, default=0.8,
+        help="H-H bond distance threshold in Å (default: 0.8)",
     )
     parser.add_argument(
         "--stride", type=int, default=1,
