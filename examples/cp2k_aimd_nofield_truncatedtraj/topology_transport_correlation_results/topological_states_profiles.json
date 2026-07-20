@@ -1,23 +1,58 @@
 {
     "0": {
-        "LBHB_Fraction": 0.001034993675403956,
+        "LBHB_Fraction": 0.0010471636253792705,
         "Avg_Wire_Length": 0.0,
-        "Hodge_Gradient_Pct": 99.99999846396433,
+        "Hodge_Gradient_Pct": 99.9999984813279,
         "Hodge_Curl_Pct": 0.0,
-        "n_hbonds": 156.31392850166048
+        "n_hbonds": 156.45623342175065
     },
     "1": {
-        "LBHB_Fraction": 0.000937397098376776,
+        "LBHB_Fraction": 0.0009493135800578521,
         "Avg_Wire_Length": 0.0,
-        "Hodge_Gradient_Pct": 99.99999836593392,
+        "Hodge_Gradient_Pct": 99.99999835517333,
         "Hodge_Curl_Pct": 0.0,
-        "n_hbonds": 155.35266084193805
+        "n_hbonds": 155.42162162162163
     },
     "2": {
-        "LBHB_Fraction": 0.0009066789033807057,
+        "LBHB_Fraction": 0.0008937557302378359,
         "Avg_Wire_Length": 0.0,
-        "Hodge_Gradient_Pct": 99.99999833736392,
+        "Hodge_Gradient_Pct": 99.99999830757609,
         "Hodge_Curl_Pct": 0.0,
-        "n_hbonds": 155.5052372150339
+        "n_hbonds": 155.50166666666667
+    },
+    "3": {
+        "LBHB_Fraction": 0.0009171410214122758,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999836831259,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 154.52105263157895
+    },
+    "4": {
+        "LBHB_Fraction": 0.0009464197168998933,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999835832816,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 155.52102376599635
+    },
+    "5": {
+        "LBHB_Fraction": 0.0009224044849011984,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999836397336,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 155.66396761133603
+    },
+    "6": {
+        "LBHB_Fraction": 0.0008704032464937316,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999829576258,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 155.20567375886526
+    },
+    "7": {
+        "LBHB_Fraction": 0.0009637388108177123,
+        "Avg_Wire_Length": 0.0,
+        "Hodge_Gradient_Pct": 99.99999838787369,
+        "Hodge_Curl_Pct": 0.0,
+        "n_hbonds": 155.22327790973873
     }
 }
