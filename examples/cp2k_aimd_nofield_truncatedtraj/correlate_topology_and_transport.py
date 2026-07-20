@@ -60,24 +60,26 @@ def parse_args():
                         help='Number of K-Means clusters for topological states (0 means auto-select based on Silhouette Score)')
     parser.add_argument('--run-pysr', action='store_true',
                         help='Run Symbolic Regression to discover explicit physical laws')
-    parser.add_argument('--pysr-iterations', type=int, default=500,
+    parser.add_argument('--pysr-iterations', type=int, default=150,
                         help='Number of iterations/generations for PySR symbolic regression')
     parser.add_argument('--pysr-runs', type=int, default=10,
                         help='Number of independent PySR runs for stability and voting cross-validation')
     
     # GA algorithm parameters
-    parser.add_argument('--pysr-populations', type=int, default=300,
+    parser.add_argument('--pysr-populations', type=int, default=576,
                         help='Number of separate populations/islands to evolve')
     parser.add_argument('--pysr-population-size', type=int, default=50,
                         help='Number of equations in each population')
-    parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=800,
+    parser.add_argument('--pysr-ncycles-per-iteration', type=int, default=5000,
                         help='Number of evolutionary cycles per iteration')
-    parser.add_argument('--pysr-maxsize', type=int, default=20,
+    parser.add_argument('--pysr-maxsize', type=int, default=15,
                         help='Maximum complexity/nodes for discovered equations')
     parser.add_argument('--pysr-crossover-prob', type=float, default=0.06,
                         help='Crossover probability for genetic evolution')
-    parser.add_argument('--pysr-parsimony', type=float, default=0.005,
+    parser.add_argument('--pysr-parsimony', type=float, default=1e-5,
                         help='Parsimony/complexity penalty weight')
+    parser.add_argument('--pysr-adaptive-parsimony-scaling', type=float, default=1000.0,
+                        help='Scaling factor for adaptive parsimony to ensure uniform complexity distribution')
     parser.add_argument('--pysr-weight-mutate-constant', type=float, default=1.0,
                         help='Relative weight of mutating constants')
     parser.add_argument('--pysr-weight-mutate-operator', type=float, default=1.0,
@@ -310,9 +312,9 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     
     # State vs Hodge Gradient Pct
     ax1.bar(
-        [f"State {c}" for c in range(n_clusters)],
+        [f"State {c}" for c in range(final_k)],
         state_profiles["Hodge_Gradient_Pct"],
-        color=[colors[c % len(colors)] for c in range(n_clusters)],
+        color=[colors[c % len(colors)] for c in range(final_k)],
         alpha=0.85, edgecolor='grey'
     )
     ax1.set_ylabel("Mean Hodge Gradient (Transport) Flow (%)", fontsize=11)
@@ -321,9 +323,9 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
 
     # State vs Avg Wire Length
     ax2.bar(
-        [f"State {c}" for c in range(n_clusters)],
+        [f"State {c}" for c in range(final_k)],
         state_profiles["Avg_Wire_Length"],
-        color=[colors[c % len(colors)] for c in range(n_clusters)],
+        color=[colors[c % len(colors)] for c in range(final_k)],
         alpha=0.85, edgecolor='grey'
     )
     ax2.set_ylabel("Mean Wire Length (Hops)", fontsize=11)
@@ -424,6 +426,10 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
     all_runs_data = []
     best_equations = []
 
+    # Instantiate the regressor once outside the loop to keep the Julia session and worker pool active,
+    # preventing the destruction and re-spawning of 192 workers between runs, which causes ProcessExitedExceptions.
+    regressor = SymbolicRegressor(niterations=niterations, **pysr_kwargs)
+
     for run_idx in range(n_runs):
         seed = 42 + run_idx
         print(f"\n>>> PySR Run {run_idx + 1}/{n_runs} (Seed: {seed}, Iterations: {niterations}) <<<")
@@ -438,7 +444,8 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
         run_kwargs["output_directory"] = str(run_output_dir)
         run_kwargs["delete_tempfiles"] = False  # Prevent PySR from wiping the directory
         
-        regressor = SymbolicRegressor(niterations=niterations, random_state=seed, **run_kwargs)
+        regressor.random_state = seed
+        regressor.pysr_kwargs = run_kwargs
         
         class TeeLogger:
             def __init__(self, filename):
@@ -458,10 +465,39 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
         
         try:
             regressor.fit(X, y, feature_names=topo_cols)
-            best_eq = regressor.get_best_equation()
             pareto_df = regressor.get_pareto_front()
             
-            best_eq_str = str(best_eq)
+            # Smart extraction: PySR's default 'best' heuristic can be too conservative 
+            # when absolute MSE is tiny (1e-8), causing it to output a constant (complexity 1).
+            # Here we manually pick the highest scoring physical equation (complexity > 1).
+            valid_eqs = pareto_df[pareto_df['complexity'] > 1]
+            if len(valid_eqs) > 0:
+                best_eq = valid_eqs.loc[valid_eqs['score'].idxmax()]['sympy_format']
+            else:
+                best_eq = regressor.get_best_equation()
+            
+            # Canonicalize and clean up equation for consensus voting by rounding float coefficients
+            try:
+                from sympy import Float
+                import math
+                # Round floats to 3 significant figures to cluster mathematically equivalent equations
+                # without destroying tiny physical coefficients (e.g., 1e-5 scale)
+                replacements = {}
+                for a in best_eq.atoms(Float):
+                    val = float(a)
+                    if val == 0:
+                        replacements[a] = 0.0
+                    else:
+                        try:
+                            rounded_val = round(val, 3 - int(math.floor(math.log10(abs(val)))) - 1)
+                            replacements[a] = rounded_val
+                        except Exception:
+                            replacements[a] = val
+                rounded_eq = best_eq.xreplace(replacements)
+                best_eq_str = str(rounded_eq)
+            except Exception:
+                best_eq_str = str(best_eq)
+                
             best_equations.append(best_eq_str)
             all_runs_data.append({
                 "run": run_idx + 1,
@@ -679,10 +715,13 @@ def main():
             "maxsize": args.pysr_maxsize,
             "crossover_probability": args.pysr_crossover_prob,
             "parsimony": args.pysr_parsimony,
+            "adaptive_parsimony_scaling": args.pysr_adaptive_parsimony_scaling,
             "weight_mutate_constant": args.pysr_weight_mutate_constant,
             "weight_mutate_operator": args.pysr_weight_mutate_operator,
             "weight_add_node": args.pysr_weight_add_node,
-            "weight_delete_node": args.pysr_weight_delete_node
+            "weight_delete_node": args.pysr_weight_delete_node,
+            "procs": 192,
+            "parallelism": "multiprocessing"
         }
         
         run_symbolic_regression(

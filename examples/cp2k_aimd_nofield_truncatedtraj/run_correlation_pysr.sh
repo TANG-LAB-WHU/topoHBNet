@@ -14,11 +14,16 @@
 source ~/miniconda3/etc/profile.d/conda.sh 2>/dev/null || source ~/.bashrc
 conda activate topoHBNet_env
 
-# Set thread environment variables to utilize all 192 cores
-export JULIA_NUM_THREADS=192
-export OMP_NUM_THREADS=192
-export MKL_NUM_THREADS=192
-export NUMEXPR_MAX_THREADS=64
+# Set PySR/juliacall thread environment variables to 1 (we are using 192 processes instead of 192 threads)
+export JULIA_NUM_THREADS=1
+export PYTHON_JULIACALL_THREADS=1
+export PYTHON_JULIACALL_HANDLE_SIGNALS=yes
+
+# Restrict math libraries to 1 thread to prevent thread explosion
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_MAX_THREADS=1
+export OPENBLAS_NUM_THREADS=1
 export CUDA_VISIBLE_DEVICES=""
 
 # Offline flags for PySR and Julia

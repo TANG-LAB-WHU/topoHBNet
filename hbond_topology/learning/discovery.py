@@ -94,7 +94,14 @@ class SymbolicRegressor:
         }
         pysr_params.update(self.pysr_kwargs)
 
-        self.model = PySRRegressor(**pysr_params)
+        if self.model is None:
+            self.model = PySRRegressor(**pysr_params)
+        else:
+            # Filter out parameters that are not valid for set_params to support 
+            # deprecated parameters (like 'multithreading') which are only absorbed via **kwargs in __init__
+            valid_params = self.model.get_params(deep=True)
+            filtered_params = {k: v for k, v in pysr_params.items() if k in valid_params}
+            self.model.set_params(**filtered_params)
         
         print(f"Starting PySR Symbolic Regression on {X_val.shape[0]} samples with {X_val.shape[1]} features.")
         if feature_names:
