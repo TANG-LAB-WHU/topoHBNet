@@ -29,7 +29,7 @@ import MDAnalysis as mda
 from MDAnalysis.lib.distances import distance_array
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
-
+import re
 
 # ─── Species classification ─────────────────────────────────────────────────
 SPECIES_RULES = {
@@ -430,6 +430,11 @@ def parse_cp2k_cell_file(cell_path: str, verbose: bool = True) -> list[float]:
             return [Ax, By, Cz]
 
     raise ValueError(f"No data lines found in cell file: {cell_path}")
+
+
+def natural_sort_key(s: str) -> list:
+    """Key function for natural sorting of filenames containing numbers (e.g. R1, R2... R10)."""
+    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', str(s))]
 
 
 def extract_or_load_mulliken_spins(
