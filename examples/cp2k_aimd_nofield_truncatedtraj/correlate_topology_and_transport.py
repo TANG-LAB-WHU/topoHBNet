@@ -21,7 +21,7 @@ import sys
 import json
 import argparse
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple, Union, Any
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -57,13 +57,17 @@ def parse_args():
                         help='Directory containing proton transfer and dynamics results')
     parser.add_argument('--species-dir', type=str, default='trajectory_species_results_mulliken',
                         help='Directory containing reactive species analysis results (default: trajectory_species_results_mulliken).')
+    parser.add_argument('--target-species', nargs='+', type=str, default=None,
+                        help='Explicitly specify one or multiple target reactive species (e.g., "*OH" "H3O+" or "*OH,H3O+"). If not set, will auto-select 1 species according to priority rules.')
+    parser.add_argument('--target-var', nargs='+', type=str, default=None,
+                        help='Explicitly specify one or multiple target variables for regression (e.g., "LBHB_Fraction" "*OH" "Hodge_Gradient_Pct" or "LBHB_Fraction,*OH").')
     parser.add_argument('--output-dir', '-o', type=str, default='topology_transport_correlation_results',
                         help='Output directory for correlation analysis')
     parser.add_argument('--n-clusters', type=int, default=0,
                         help='Number of K-Means clusters for topological states (0 means auto-select based on Silhouette Score)')
     parser.add_argument('--run-pysr', action='store_true',
                         help='Run Symbolic Regression to discover explicit physical laws')
-    parser.add_argument('--pysr-iterations', type=int, default=150,
+    parser.add_argument('--pysr-iterations', type=int, default=200,
                         help='Number of iterations/generations for PySR symbolic regression')
     parser.add_argument('--pysr-runs', type=int, default=10,
                         help='Number of independent PySR runs for stability and voting cross-validation')
@@ -230,6 +234,13 @@ def plot_correlation_heatmap(df: pd.DataFrame, topo_cols: list, transport_cols: 
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
+
+    # Save raw CSV data
+    csv_dir = output_path.parent / "raw_data_csv"
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    cross_corr_csv = csv_dir / "cross_correlation_matrix.csv"
+    cross_corr.to_csv(cross_corr_csv)
+    print(f"  Saved Raw Cross-Correlation Matrix CSV: {cross_corr_csv}")
     print(f"  Saved Correlation Heatmap: {output_path}")
 
 
@@ -285,6 +296,12 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     plt.savefig(diag_png, dpi=300)
     plt.close()
     
+    # Save raw diagnostic CSV
+    csv_dir = output_dir / "raw_data_csv"
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    df_diag = pd.DataFrame({"K_clusters": list(k_range), "Inertia_WCSS": inertias, "Silhouette_Score": sil_scores})
+    df_diag.to_csv(csv_dir / "topological_clustering_diagnostics.csv", index=False)
+
     # 4. Determine final K to use
     if n_clusters <= 0:
         print(f"\n  [Physics Warning] Auto-selected K={optimal_k_auto} based on max Silhouette.")
@@ -297,6 +314,10 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     # 5. Final K-Means Clustering on TNN PC1 and PC2 (Topological Space)
     kmeans = KMeans(n_clusters=final_k, random_state=42, n_init=10)
     df["Topological_State"] = kmeans.fit_predict(features_scaled)
+
+    # Save raw cluster space CSV
+    space_cols = [c for c in ["Time_fs", "PC1", "PC2", "Topological_State"] if c in df.columns]
+    df[space_cols].to_csv(csv_dir / "topological_states_space.csv", index=False)
 
     # 6. Plot Clusters in TNN Space
     plt.figure(figsize=(8, 6.5))
@@ -329,10 +350,12 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     print(state_profiles.to_string())
     print("-"*50)
 
-    # 4. Save profiles to JSON
+    # Save profiles to JSON and CSV
     profiles_dict = state_profiles.to_dict(orient="index")
     with open(output_dir / "topological_states_profiles.json", "w") as f:
         json.dump(profiles_dict, f, indent=4)
+    state_profiles.to_csv(csv_dir / "topological_states_profiles.csv")
+    print(f"  Saved Raw Cluster Profiles CSV: {csv_dir / 'topological_states_profiles.csv'}")
 
     # 5. Plot bar chart comparing Hodge Gradient (Transport) & Wire length
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
@@ -369,59 +392,105 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     return profiles_dict
 
 
-def predict_transport_from_topology(df: pd.DataFrame, topo_cols: list, target_candidates: list, output_dir: Path):
-    """Fit a Random Forest to predict transport efficiency/reactive species from topology and plot feature importance."""
+def evaluate_all_species_predictability(df: pd.DataFrame, topo_cols: list, species_cols: list, output_dir: Path):
+    """Evaluate Random Forest R^2 for all available species to help user manually select targets later."""
+    if not HAS_SKLEARN or not species_cols:
+        return
+        
+    print("\n" + "="*70)
+    print("  [Diagnostic] Evaluating Topological Predictability for ALL Species")
+    print("=" * 70)
+    
+    r2_results = []
+    
+    for sp in species_cols:
+        if sp in df.columns and df[sp].std() > 1e-6:
+            y = df[sp].values
+            X = df[topo_cols].values
+            
+            rf = RandomForestRegressor(n_estimators=100, random_state=42)
+            rf.fit(X, y)
+            r2_score = float(rf.score(X, y))
+            r2_results.append({"Species": sp, "RF_R2_Score": r2_score})
+            print(f"    Species: {sp:15s} | Random Forest R^2 Score: {r2_score:.4f}")
+            
+    if r2_results:
+        # Sort by R2 descending
+        r2_results = sorted(r2_results, key=lambda x: x["RF_R2_Score"], reverse=True)
+        
+        csv_dir = output_dir / "raw_data_csv"
+        csv_dir.mkdir(parents=True, exist_ok=True)
+        
+        df_r2 = pd.DataFrame(r2_results)
+        out_csv = csv_dir / "all_species_topological_r2_scores.csv"
+        df_r2.to_csv(out_csv, index=False)
+        print("-" * 70)
+        print(f"  Saved Full Species Predictability R^2 Leaderboard: {out_csv}")
+
+
+def predict_transport_from_topology(df: pd.DataFrame, topo_cols: list, targets: list, output_dir: Path):
+    """Fit Random Forest models to predict transport efficiency / reactive species from topology and plot feature importance."""
     if not HAS_SKLEARN:
         return
 
-    # Check if target has variance, fallback if not
-    target_var = target_candidates[0] if target_candidates else "LBHB_Fraction"
-    for t in target_candidates:
-        if t in df.columns and df[t].std() > 1e-6:
-            target_var = t
-            break
-            
-    print(f"\nSelecting target variable for Random Forest regression: '{target_var}' (based on variance profiling)")
+    valid_targets = [t for t in targets if t in df.columns and df[t].std() > 1e-6]
+    if not valid_targets:
+        print("  [Warning] No valid target variable found with variance > 1e-6.")
+        return
 
-    y = df[target_var].values
-    X = df[topo_cols].values
+    for idx, target_var in enumerate(valid_targets):
+        print(f"\nEvaluating Random Forest regression for target variable: '{target_var}'")
 
-    # Train Random Forest Regressor
-    rf = RandomForestRegressor(n_estimators=100, random_state=42)
-    rf.fit(X, y)
+        y = df[target_var].values
+        X = df[topo_cols].values
 
-    # R2 Score (accuracy of topology predicting transport)
-    r2_score = float(rf.score(X, y))
-    print(f"Random Forest R^2 score for Topology predicting {target_var}: {r2_score:.3f}")
+        rf = RandomForestRegressor(n_estimators=100, random_state=42)
+        rf.fit(X, y)
 
-    # Feature Importance
-    importances = rf.feature_importances_
-    indices = np.argsort(importances)[::-1]
-    sorted_features = [topo_cols[i] for i in indices]
-    sorted_importances = importances[indices]
+        r2_score = float(rf.score(X, y))
+        print(f"Random Forest R^2 score for Topology predicting {target_var}: {r2_score:.3f}")
 
-    # Plot feature importance
-    plt.figure(figsize=(8, 5))
-    plt.barh(sorted_features[::-1], sorted_importances[::-1], color='#8E44AD', alpha=0.8)
-    plt.xlabel("Relative Importance Score", fontsize=11)
-    
-    title_label = "Reactive LBHBs" if target_var == "LBHB_Fraction" else "Cooperative Loops"
-    plt.title(f"Which Topological Features Dictate {title_label}?\n(Random Forest R² = {r2_score:.2f})",
-              fontsize=12, fontweight='bold')
-    plt.grid(True, alpha=0.2, axis='x')
-    plt.tight_layout()
-    
-    importance_png = output_dir / "topological_feature_importance.png"
-    plt.savefig(importance_png, dpi=300)
-    plt.close()
-    print(f"  Saved Topological Feature Importance plot: {importance_png}")
+        importances = rf.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        sorted_features = [topo_cols[i] for i in indices]
+        sorted_importances = importances[indices]
 
-    # Save to JSON
-    importance_dict = {feat: float(imp) for feat, imp in zip(sorted_features, sorted_importances)}
-    importance_dict["_target_variable"] = target_var
-    importance_dict["_model_R2"] = r2_score
-    with open(output_dir / "topological_importance.json", "w") as f:
-        json.dump(importance_dict, f, indent=4)
+        plt.figure(figsize=(8, 5))
+        plt.barh(sorted_features[::-1], sorted_importances[::-1], color='#8E44AD', alpha=0.8)
+        plt.xlabel("Relative Importance Score", fontsize=11)
+        
+        title_label = "Low-Barrier H-Bonds (LBHB)" if target_var == "LBHB_Fraction" else f"Target: {target_var}"
+        plt.title(f"Which Topological Features Dictate {title_label}?\n(Random Forest R² = {r2_score:.2f})",
+                  fontsize=12, fontweight='bold')
+        plt.grid(True, alpha=0.2, axis='x')
+        plt.tight_layout()
+        
+        safe_name = target_var.replace("*", "star_").replace("+", "plus").replace("-", "minus")
+        importance_png = output_dir / f"topological_feature_importance_{safe_name}.png"
+        plt.savefig(importance_png, dpi=300)
+        if idx == 0:
+            plt.savefig(output_dir / "topological_feature_importance.png", dpi=300)
+        plt.close()
+        print(f"  Saved Topological Feature Importance plot: {importance_png}")
+
+        importance_dict = {feat: float(imp) for feat, imp in zip(sorted_features, sorted_importances)}
+        importance_dict["_target_variable"] = target_var
+        importance_dict["_model_R2"] = r2_score
+        
+        json_path = output_dir / f"topological_importance_{safe_name}.json"
+        with open(json_path, "w") as f:
+            json.dump(importance_dict, f, indent=4)
+        if idx == 0:
+            with open(output_dir / "topological_importance.json", "w") as f:
+                json.dump(importance_dict, f, indent=4)
+
+        # Save raw CSV
+        csv_dir = output_dir / "raw_data_csv"
+        csv_dir.mkdir(parents=True, exist_ok=True)
+        df_imp = pd.DataFrame({"Feature": sorted_features, "Importance_Score": sorted_importances, "Rank": range(1, len(sorted_features) + 1)})
+        imp_csv = csv_dir / f"topological_feature_importance_{safe_name}.csv"
+        df_imp.to_csv(imp_csv, index=False)
+        print(f"  Saved Raw Feature Importance CSV: {imp_csv}")
 
 def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, output_dir: Path, niterations: int = 20, n_runs: int = 5, **pysr_kwargs):
     """Run multi-run Symbolic Regression (PySR) for stability and cross-validation voting."""
@@ -454,12 +523,13 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
     # preventing the destruction and re-spawning of 192 workers between runs, which causes ProcessExitedExceptions.
     regressor = SymbolicRegressor(niterations=niterations, **pysr_kwargs)
 
+    safe_name = target_var.replace("*", "star_").replace("+", "plus").replace("-", "minus")
     for run_idx in range(n_runs):
         seed = 42 + run_idx
         print(f"\n>>> PySR Run {run_idx + 1}/{n_runs} (Seed: {seed}, Iterations: {niterations}) <<<")
         
-        # Save PySR intermediate files and hall of fame directly in output_dir
-        run_output_dir = output_dir / "pysr_runs" / f"run_{run_idx + 1}_{seed}"
+        # Save PySR intermediate files and hall of fame in target-specific subfolder
+        run_output_dir = output_dir / f"pysr_runs_{safe_name}" / f"run_{run_idx + 1}_{seed}"
         run_output_dir.mkdir(parents=True, exist_ok=True)
         
         # Override tempdir and output_directory inside pysr_kwargs
@@ -557,7 +627,7 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
                     feature_counts[col] += 1
 
     # Save Markdown report
-    md_path = output_dir / "discovered_physical_law.md"
+    md_path = output_dir / f"discovered_physical_law_{safe_name}.md"
     try:
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(f"# Discovering Robust H-Bond Topological Laws via Multi-Run Symbolic Regression\n\n")
@@ -635,13 +705,54 @@ def run_symbolic_regression(df: pd.DataFrame, topo_cols: list, target_var: str, 
                 f.write(f"<details>\n")
                 f.write(f"<summary><b>Run {run['run']} (Seed: {run['seed']}) — Best Equation: {run['best_equation']}</b></summary>\n\n")
                 f.write(f"| Complexity | Loss (MSE) | Score | Equation | Sympy Format |\n")
-                f.write(f"| :--- | :--- | :--- | :--- | :--- |\n")
+                f.write(f"| :--- | :--- | :--- | :--- |\n")
                 for _, row in run["pareto_front"].iterrows():
                     f.write(f"| {row['complexity']} | {row['loss']:.6e} | {row.get('score', 0.0):.4f} | `{row['equation']}` | `{row['sympy_format']}` |\n")
                 f.write(f"\n</details>\n\n")
+
         print(f"\n[Success] Discovered physical laws exported to Markdown format: {md_path}")
+
+        # Export raw CSV files for PySR
+        csv_dir = output_dir / "raw_data_csv"
+        csv_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 1. Consensus Equations CSV
+        eq_data = []
+        for rank, (eq, count) in enumerate(most_common_eqs, 1):
+            freq = (count / len(all_runs_data)) * 100
+            eq_data.append({
+                "Rank": rank,
+                "Consensus_Equation": f"{target_var} = {eq}",
+                "Vote_Count": count,
+                "Total_Runs": len(all_runs_data),
+                "Frequency_Pct": freq
+            })
+        df_eq = pd.DataFrame(eq_data)
+        eq_csv = csv_dir / f"pysr_consensus_equations_{safe_name}.csv"
+        df_eq.to_csv(eq_csv, index=False)
+        print(f"  Saved Raw PySR Consensus Equations CSV: {eq_csv}")
+
+        # 2. Feature Stability CSV
+        stab_data = []
+        for feat, count in sorted_features:
+            stability = (count / total_equations) * 100 if total_equations > 0 else 0.0
+            desc = descriptions.get(feat, "Topological descriptor")
+            priority = "High" if stability > 70 else ("Medium" if stability > 30 else "Low")
+            stab_data.append({
+                "Feature": feat,
+                "Description": desc,
+                "Occurrence_Count": count,
+                "Total_Equations": total_equations,
+                "Stability_Pct": stability,
+                "Priority": priority
+            })
+        df_stab = pd.DataFrame(stab_data)
+        stab_csv = csv_dir / f"pysr_feature_stability_{safe_name}.csv"
+        df_stab.to_csv(stab_csv, index=False)
+        print(f"  Saved Raw PySR Feature Stability CSV: {stab_csv}")
+
     except Exception as e:
-        print(f"  [Error] Failed to write Markdown report: {e}")
+        print(f"  [Error] Failed to write Markdown/CSV report: {e}")
 
 
 def main():
@@ -714,44 +825,133 @@ def main():
 
     # 3. K-Means clustering in Topological PC Space & profiling
     analyze_topological_states(df, args.n_clusters, output_dir)
+    
+    # 3.5 Evaluate all species predictability (User Requested Diagnostic)
+    evaluate_all_species_predictability(df, topo_cols, species_cols, output_dir)
 
     # 4. Feature Importance using RandomForest
-    # Prioritize active species (*OH, OH-) as ML and PySR targets based on strict chemical significance
-    target_candidates = []
+    # Parse CLI target_var if specified (overrides target selection)
+    cli_var_list = []
+    if args.target_var:
+        for item in args.target_var:
+            parts = [p.strip() for p in item.split(",") if p.strip()]
+            cli_var_list.extend(parts)
+
+    cli_species_list = []
+    if args.target_species:
+        for item in args.target_species:
+            parts = [p.strip() for p in item.split(",") if p.strip()]
+            cli_species_list.extend(parts)
+
+    selected_targets = []
+    selected_species_list = []
+
+    if cli_var_list:
+        # Override all target selection with user specified target variables
+        for v in cli_var_list:
+            if v in df.columns and df[v].std() > 1e-6:
+                if v not in selected_targets:
+                    selected_targets.append(v)
+            else:
+                print(f"  [Warning] Specified target variable '{v}' not in dataset or zero variance, skipping.")
+    else:
+        # Default strategy: Mandatory Target 1: LBHB_Fraction
+        if "LBHB_Fraction" in df.columns and df["LBHB_Fraction"].std() > 1e-6:
+            selected_targets.append("LBHB_Fraction")
+
+        # Mandatory Target 2: Reactive Species
+        if cli_species_list:
+            for sp in cli_species_list:
+                if sp in df.columns and df[sp].std() > 1e-6:
+                    selected_species_list.append(sp)
+                    if sp not in selected_targets:
+                        selected_targets.append(sp)
+                else:
+                    print(f"  [Warning] Specified target species '{sp}' not in dataset or zero variance, skipping.")
+        elif species_cols:
+            chemical_priority = ["*OH", "OH-", "H2O2", "H3O+", "HO2*", "O2-", "O*", "H*"]
+            for sp in chemical_priority:
+                if sp in species_cols and sp in df.columns and df[sp].std() > 1e-6:
+                    selected_species_list.append(sp)
+                    if sp not in selected_targets:
+                        selected_targets.append(sp)
+                    break
+            if not selected_species_list:
+                boring_solvents = {"H2O", "(H2O)2", "H5O2"}
+                for sp in species_cols:
+                    if sp in df.columns and sp not in boring_solvents and df[sp].std() > 1e-6:
+                        selected_species_list.append(sp)
+                        if sp not in selected_targets:
+                            selected_targets.append(sp)
+                        break
+
+    # Fallback if no target was found
+    if not selected_targets:
+        if "LBHB_Fraction" in df.columns:
+            selected_targets.append("LBHB_Fraction")
+
+    # Build evaluation report for target selection
+    selection_report = {
+        "selected_targets": selected_targets,
+        "selected_species": selected_species_list,
+        "selection_mode": "cli_target_var" if args.target_var else ("cli_target_species" if args.target_species else "auto_priority_queue"),
+        "cli_specified_target_var": cli_var_list if cli_var_list else None,
+        "cli_specified_target_species": cli_species_list if cli_species_list else None,
+        "chemical_priority_queue": ["*OH", "OH-", "H2O2", "H3O+", "HO2*", "O2-", "O*", "H*"],
+        "available_species_columns": species_cols if species_cols else [],
+        "species_evaluation_details": {}
+    }
+
     if species_cols:
-        # Define a scientific priority queue for reactive species
-        chemical_priority = ["*OH", "OH-", "H2O2", "H3O+", "HO2*", "O2-", "O*", "H*"]
-        # 1. Add high-priority species that exist in the data
-        for sp in chemical_priority:
-            if sp in species_cols:
-                target_candidates.append(sp)
-        # 2. Add remaining species EXCEPT boring bulk solvents
-        boring_solvents = {"H2O", "(H2O)2", "H5O2"}
         for sp in species_cols:
-            if sp not in target_candidates and sp not in boring_solvents:
-                target_candidates.append(sp)
+            in_df = sp in df.columns
+            std_val = float(df[sp].std()) if in_df else 0.0
+            
+            if sp in selected_targets:
+                status = "SELECTED"
+            elif not in_df:
+                status = "NOT_IN_DATAFRAME"
+            elif std_val <= 1e-6:
+                status = "SKIPPED_ZERO_VARIANCE"
+            else:
+                status = "PASSED_CRITERIA_BUT_LOWER_PRIORITY"
                 
-    target_candidates.extend(["LBHB_Fraction", "Hodge_Harmonic_Pct", "Hodge_Gradient_Pct"])
-    
-    predict_transport_from_topology(df, topo_cols, target_candidates, output_dir)
+            selection_report["species_evaluation_details"][sp] = {
+                "in_dataset": in_df,
+                "std_dev": std_val,
+                "status": status
+            }
+
+    report_json_path = output_dir / "target_selection_report.json"
+    with open(report_json_path, "w", encoding="utf-8") as f:
+        json.dump(selection_report, f, indent=4)
+
+    # Save CSV version of target selection report
+    csv_dir = output_dir / "raw_data_csv"
+    csv_dir.mkdir(parents=True, exist_ok=True)
+    if species_cols:
+        report_rows = []
+        for sp, details in selection_report["species_evaluation_details"].items():
+            report_rows.append({
+                "Species": sp,
+                "In_Dataset": details["in_dataset"],
+                "Std_Dev": details["std_dev"],
+                "Selection_Status": details["status"]
+            })
+        df_sel = pd.DataFrame(report_rows)
+        df_sel.to_csv(csv_dir / "target_selection_report.csv", index=False)
+
+    print(f"\n[Target Selection] Selected mandatory targets for ML & Symbolic Regression: {selected_targets}")
+    print(f"  Saved Target Selection Report: {report_json_path}")
+    print(f"  Saved Target Selection Report CSV: {csv_dir / 'target_selection_report.csv'}")
+
+    predict_transport_from_topology(df, topo_cols, selected_targets, output_dir)
 
     # 5. Symbolic Regression (Optional physical law discovery)
     if args.run_pysr:
-        # We determine the target dynamically prioritizing species
-        target_var = target_candidates[0]
-        for t in target_candidates:
-            if t in df.columns and df[t].std() > 1e-6:
-                target_var = t
-                break
-        
-        # Crucial physics-guided step: Exclude PCA components (PC1, PC2) from Symbolic Regression.
-        # While abstract neural network PCA coordinates are useful for black-box ML predictions,
-        # they lack physical dimensions. A symbolic equation containing "PC1" has no physical interpretation.
-        # We restrict the inputs strictly to interpretable topological invariants:
         interpretable_topo_cols = [c for c in topo_cols if c not in ["PC1", "PC2"]]
         print(f"\n[Physics Guidance] Restricting symbolic regression features to physically interpretable invariants: {interpretable_topo_cols}")
         
-        # Assemble GA algorithm parameters dynamically
         pysr_ga_args = {
             "populations": args.pysr_populations,
             "population_size": args.pysr_population_size,
@@ -767,12 +967,16 @@ def main():
             "procs": 192,
             "parallelism": "multiprocessing"
         }
-        
-        run_symbolic_regression(
-            df, interpretable_topo_cols, target_var, output_dir, 
-            niterations=args.pysr_iterations, n_runs=args.pysr_runs, 
-            **pysr_ga_args
-        )
+
+        for target_var in selected_targets:
+            print(f"\n" + "=" * 70)
+            print(f"  Running Multi-Run PySR Symbolic Regression for Target: {target_var}")
+            print(f"=" * 70)
+            run_symbolic_regression(
+                df, interpretable_topo_cols, target_var, output_dir, 
+                niterations=args.pysr_iterations, n_runs=args.pysr_runs, 
+                **pysr_ga_args
+            )
 
     print("\n" + "=" * 70)
     print("Bridge analysis completed successfully! All correlation diagnostics executed.")
