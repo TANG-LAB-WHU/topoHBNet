@@ -47,15 +47,16 @@ This is the central analysis script utilizing the core `topoHBNet` library. It m
 Focuses on detecting chemical transformations and identifying molecular fragments in the liquid phase while excluding the solid substrate.
 
 - **Key Features**:
-  - **PBC-Aware Bond Detection**: Identifies O-H, O-O, and H-H bonds across periodic boundaries.
+  - **PBC-Aware Bond Detection**: Identifies O-H, O-O, and H-H bonds across periodic boundaries (`r_oh` < 1.30 Å, `r_oo` < 1.50 Å).
   - **Graph-Based Fragmentation**: Uses connected components to isolate distinct molecules.
-  - **Substrate Exclusion**: Automatically identifies and filters out surface atoms (Si, C) to focus only on reactive species.
-  - **Stoichiometric Classification**: Categorizes H/O fragments into species like H₂O, H*, *OH, H₂O₂, H₃O⁺, etc.
-- **Primary Output**: `trajectory_species_results/` (contains population counts and evolution plots).
+  - **Substrate Exclusion**: Automatically filters out surface atoms (Si, C, etc.) with physically tuned thresholds (C-O 1.85 Å, Si-O 2.15 Å).
+  - **Quantum Mulliken Spin Decoupling**: Parses CP2K `.out` logs to extract atomic spin moments, decoupling `OH-` (hydroxide anion) from `*OH` (hydroxyl radical) with quantum accuracy.
+  - **Equilibration Detection**: Automatically discards equilibration frames using `--equil-start-frame`.
+- **Primary Output**: `trajectory_species_results/` (contains spin-decoupled `OH-` and `*OH` population counts and evolution plots).
 - **Usage**:
-  - **To generate species analysis results (`trajectory_species_results/`):**
+  - **To generate species analysis results with equilibration filtering:**
     ```bash
-    python trajectory_species_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --output-dir trajectory_species_results
+    python trajectory_species_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --output-dir trajectory_species_results --equil-start-frame 4000
     ```
 
 ## 3. Simulation Energetics Visualization
