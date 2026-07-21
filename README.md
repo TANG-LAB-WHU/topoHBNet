@@ -40,7 +40,7 @@ flowchart TD
 
 ---
 
-## Installation
+## 🐧/🪟 Windows (CUDA) Deployment Guide
 
 ### Prerequisites: Environment Setup
 
@@ -91,10 +91,68 @@ Then, install the package in editable mode to allow for development and easy upd
 
 ```bash
 # Using uv (fastest)
-uv pip install -e ".[all]"
+uv pip install -e ".[full]"
 
 # Or using pip
-pip install -e ".[all]"
+pip install -e ".[full]"
+```
+
+---
+
+## 🍏 macOS (Apple Silicon) Deployment Guide
+
+For users with Apple Silicon (M1/M2/M3/M4) MacBooks, Apple uses Metal Performance Shaders (MPS) instead of NVIDIA CUDA. Additionally, compiling the underlying PyG graph computation libraries directly using Mac's default Clang compiler often triggers C++ template compilation errors.
+
+To successfully deploy `topoHBNet` and activate MPS hardware acceleration, **you must skip the official `pip` or `pyg` installation channels and strictly follow this `conda-forge` based workflow.**
+
+### 1. Prepare Conda Environment
+
+It is highly recommended to use Miniconda or Miniforge. Open your terminal, create and activate a Python 3.12 environment:
+
+```bash
+conda create -n topoHBNet python=3.12 -y
+conda activate topoHBNet
+```
+
+### 2. Install Pre-compiled PyTorch Stack via Conda-Forge
+
+**(Critical Step: Do NOT use pip)**
+The open-source community provides pre-compiled graph computation binaries perfectly adapted for the Mac ARM64 architecture on the `conda-forge` channel. Run the following command to completely avoid local C++ compilation waits and errors:
+
+```bash
+conda install pytorch torchvision torchaudio pytorch_scatter pytorch_sparse -c conda-forge -y
+```
+
+*(Note: We use underscores like `pytorch_scatter` here, unlike the hyphenated names in pip)*
+
+### 3. Clone and Install the Project
+
+Get the `topoHBNet` source code and install the project and other regular dependencies in developer mode:
+
+```bash
+# Clone the repository (if not already cloned)
+git clone https://github.com/TANG-LAB-WHU/topoHBNet.git
+cd topoHBNet
+
+# Install the core project
+pip install -e ".[full]"
+```
+
+### 4. Verify MPS Hardware Acceleration
+
+After installation, run the following command in your terminal. If the output is `True`, your M-series hardware acceleration environment is fully ready:
+
+```bash
+python -c "import torch, torch_scatter; print('MPS Hardware Acceleration Ready:', torch.backends.mps.is_available())"
+```
+
+### 5. Running Tests
+
+Now you can directly utilize your M-chip's compute power to process molecular dynamics trajectories:
+
+```bash
+# Run analysis workflow with Topological Machine Learning (TML)
+python topoHBNet_main_analysis.py --trajectory examples/trajectory.xyz --run-ml --ml-dim 16
 ```
 
 ---
