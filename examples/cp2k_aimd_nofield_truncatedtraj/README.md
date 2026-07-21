@@ -124,17 +124,28 @@ Bridges high-dimensional topological representations from machine learning with 
   - **Feature Importance Regression**: Trains a Random Forest to predict transport efficiency (`Hodge_Gradient_Pct` or `LBHB_Fraction`) from topological invariants and ranks which topological shapes are the strongest physical predictors.
   - **Physics-Guided Symbolic Regression (`--run-pysr`)**: Automatically runs PySR (Symbolic Regression via Genetic Programming) to discover explicit, publishable analytical physical laws. 
     > [!IMPORTANT]
-    > **Physics Guidance**: In this discovery step, abstract neural network coordinates (`PC1`, `PC2`) are automatically filtered out. Restricting the feature space strictly to physically interpretable topological invariants ($\beta_1$, Euler, $n_{\text{hbonds}}$, etc.) ensures that the discovered mathematical equation has well-defined physical units and clear mechanistic interpretability.
-- **Primary Output**: `topology_transport_correlation_results/` (contains correlation heatmaps, state-profiling bar charts, topological state clustering plots, feature importance horizontal bars, aligned CSV/JSON datasets, and `discovered_physical_law.txt` when `--run-pysr` is enabled).
+    > **Physics Guidance**: In this discovery step, abstract neural network coordinates (`PC1`, `PC2`) are automatically filtered out. Restricting the feature space strictly to physically interpretable topological invariants ($\beta_1$, Euler, $n_{\text{hbonds}}$, donor/acceptor H-bond states like `state_2D0A`, `state_1D1A`) ensures that the discovered mathematical equation has well-defined physical units and clear mechanistic interpretability.
+  - **Multi-Run Stability Selection**: Performs consensus voting across independent evolutionary runs (e.g. 10 runs) to identify robust physical equations and ranks invariant feature stability, Outputting a detailed report in `discovered_physical_law.md`.
+- **Primary Output**: `topology_transport_correlation_results/` (contains correlation heatmaps, state-profiling bar charts, topological state clustering plots, feature importance horizontal bars, aligned CSV/JSON datasets, and consensus report `discovered_physical_law.md` when `--run-pysr` is enabled).
+- **Discovered Analytical Physical Law Example**:
+  From multi-run stability selection on the `LBHB_Fraction` target, PySR discovers consensus equation:
+  $$LBHB\_Fraction \approx -3.11 \times 10^{-5} \cdot \text{state\_1D1A} \cdot \exp(-\text{state\_2D0A}) + 0.00111$$
+  where `state_2D0A` (donor defect water, 78.1% stability score) and `state_1D1A` (wire/chain intermediate, 46.1% stability score) are identified as the primary physical drivers of proton transport efficiency.
 - **Usage**:
   - **To generate standard correlation and Random Forest regression:**
     ```bash
     python correlate_topology_and_transport.py --topo-dir topoHBNet-run-ml --proton-dir proton_transfer_results --output-dir topology_transport_correlation_results
     ```
-  - **To trigger Symbolic Regression and automatically discover physical laws:**
+  - **To trigger Symbolic Regression locally and discover physical laws:**
     ```bash
     python correlate_topology_and_transport.py --topo-dir topoHBNet-run-ml --proton-dir proton_transfer_results --output-dir topology_transport_correlation_results --run-pysr
     ```
+  - **HPC Cluster Execution (for discovering more universal physical equations via parallel PySR runs):**
+    ```bash
+    sbatch run_correlation_pysr.sh
+    ```
+    > [!TIP]
+    > **HPC Parallel Discovery**: Running via `run_correlation_pysr.sh` utilizes multi-core HPC environments (configuring thread environments, Julia parallel backends, and GLIBCXX links) to perform deep genetic programming over higher populations and iterations, discovering robust and universal analytical equations (`discovered_physical_law.md`).
 
 ---
 
