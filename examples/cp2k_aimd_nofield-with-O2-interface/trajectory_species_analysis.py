@@ -29,7 +29,7 @@ import MDAnalysis as mda
 from MDAnalysis.lib.distances import distance_array
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import connected_components
-import re
+
 
 # ─── Species classification ─────────────────────────────────────────────────
 SPECIES_RULES = {
@@ -39,93 +39,43 @@ SPECIES_RULES = {
     (1, 0): "H*",
     (2, 0): "H2",
     (0, 2): "O2",
-    (1, 1): "*OH",        # Default label; dynamically split into OH- or *OH based on spin
+    (1, 1): "*OH",
     (2, 1): "H2O",
     (3, 1): "H3O+",
     (1, 2): "HO2*",
     (2, 2): "H2O2",
-    (3, 2): "H3O2-",    # Zundel-like anion / bi-hydroxide
-    (5, 2): "H5O2+",    # Zundel cation
+    (3, 2): "H3O2-",    # Zundel-like
     (4, 2): "(H2O)2",   # water dimer
-    (7, 3): "H7O3+",    # Intermediate hydrated proton
-    (6, 3): "(H2O)3",   # water trimer
-    (9, 4): "H9O4+",    # Eigen cation
-    (5, 3): "H5O3-",    # Hydrated hydroxide anion
-    (7, 4): "H7O4-",    # Eigen anion
-    (8, 4): "(H2O)4",   # water tetramer
 }
 
-# Explicit list of tracked species including both OH- anion and *OH radical
-TRACKED_SPECIES = [
-    "(H2O)2", "(H2O)3", "(H2O)4",
-    "*OH", "OH-", "H*", "H2", "H2O", "H2O2",
-    "H3O+", "H3O2-", "H5O2+", "H5O3-", "H7O3+", "H7O4-", "H9O4+",
-    "HO2*", "O*", "O2"
-]
+# Species that always appear in the output CSV, even if count is 0.
+# Auto-generated from SPECIES_RULES to stay in sync.
+TRACKED_SPECIES = list(SPECIES_RULES.values())
 
 
-def classify_fragment(
-    frag_indices: list[int],
-    elements: np.ndarray,
-    bonds: Optional[np.ndarray] = None,
-    spin_moments: Optional[np.ndarray] = None,
-) -> str:
-    """Classify a molecular fragment by its atomic composition, bond topology, and spin.
+def classify_fragment(elements: list[str]) -> str:
+    """Classify a molecular fragment by its atomic composition.
 
     Only considers H and O atoms. Fragments containing other elements
     (Si, C, etc.) are classified separately.
 
     Parameters
     ----------
-    frag_indices : list of int
-        Atom indices in the fragment.
-    elements : ndarray of str
-        Element symbols for all atoms in system.
-    bonds : ndarray of shape (M, 2), optional
-        Detected bonds for topological verification.
-    spin_moments : ndarray of shape (N,), optional
-        Atomic spin moments for current frame from Mulliken analysis.
+    elements : list of str
+        Element symbols for each atom in the fragment.
 
     Returns
     -------
     str
         Species name.
     """
-    frag_elems = [elements[i] for i in frag_indices]
-    n_H = frag_elems.count("H")
-    n_O = frag_elems.count("O")
-    n_other = len(frag_elems) - n_H - n_O
+    n_H = elements.count("H")
+    n_O = elements.count("O")
+    n_other = len(elements) - n_H - n_O
 
     if n_other > 0:
         # Fragment contains non-H/O atoms (e.g., Si, C) — surface/substrate
-        return f"other({len(frag_elems)})"
-
-    # Topological verification for (2, 2) H2O2 vs (H2O)2 dimer
-    if n_H == 2 and n_O == 2:
-        has_oo_bond = False
-        if bonds is not None and len(bonds) > 0:
-            frag_set = set(frag_indices)
-            o_indices = {i for i in frag_indices if elements[i] == "O"}
-            for b1, b2 in bonds:
-                if b1 in o_indices and b2 in o_indices:
-                    has_oo_bond = True
-                    break
-        if has_oo_bond:
-            return "H2O2"
-        else:
-            return "(H2O)2"
-
-    # Dynamic decoupling of (1, 1) into OH- vs *OH using Mulliken Spin Moment
-    if n_H == 1 and n_O == 1:
-        if spin_moments is not None and len(spin_moments) > 0:
-            o_indices = [i for i in frag_indices if elements[i] == "O"]
-            if o_indices:
-                o_spin = abs(spin_moments[o_indices[0]])
-                if o_spin >= 0.35:
-                    return "*OH"
-                else:
-                    return "OH-"
-        return "OH-/*OH"  # Fallback if no spin data available
+        return f"other({len(elements)})"
 
     species = SPECIES_RULES.get((n_H, n_O))
     if species is not None:
@@ -138,15 +88,15 @@ def classify_fragment(
 # ─── Core analysis ───────────────────────────────────────────────────────────
 
 # Default bond distance thresholds (Å) for substrate bond types
-# Raised to 1.85 Å for C-O/C-C and 2.15 Å for Si-O to prevent artificial fragment
-# detachment caused by AIMD thermal vibrations (>300K), eliminating pseudo-H2O2 and pseudo-*OH noise.
+# These ensure substrate atoms (Si, C) are properly grouped into fragments
+# so they get excluded from H/O species counting.
 SUBSTRATE_BOND_THRESHOLDS = {
-    ("C", "H"): 1.30,    # C-H covalent bond (1.09 Å equilibrium + thermal margin)
-    ("Si", "O"): 2.15,   # Si-O covalent bond (1.63 Å equilibrium + thermal margin)
-    ("Si", "C"): 2.15,   # Si-C covalent bond
-    ("Si", "H"): 1.80,   # Si-H covalent bond
-    ("C", "C"): 1.85,    # C-C covalent bond (1.54 Å equilibrium + thermal margin)
-    ("C", "O"): 1.85,    # C-O covalent bond (1.43 Å equilibrium + thermal margin)
+    ("C", "H"): 1.2,    # C-H covalent bond
+    ("Si", "O"): 2.0,   # Si-O covalent bond
+    ("Si", "C"): 2.0,   # Si-C covalent bond
+    ("Si", "H"): 1.7,   # Si-H covalent bond (rare)
+    ("C", "C"): 1.7,    # C-C covalent bond
+    ("C", "O"): 1.6,    # C-O covalent bond
 }
 
 
@@ -192,9 +142,9 @@ def detect_bonds_frame(
     positions: np.ndarray,
     elements: np.ndarray,
     box: Optional[np.ndarray],
-    r_oh: float = 1.30,
-    r_oo: float = 1.50,
-    r_hh: float = 0.80,
+    r_oh: float = 1.2,
+    r_oo: float = 1.6,
+    r_hh: float = 0.9,
 ) -> np.ndarray:
     """Detect bonds based on distance thresholds for a single frame.
 
@@ -308,7 +258,6 @@ def analyze_frame(
     r_oo: float,
     r_hh: float,
     ho_only: bool = True,
-    spin_moments: Optional[np.ndarray] = None,
 ) -> dict[str, int]:
     """Analyze species composition for a single trajectory frame.
 
@@ -324,8 +273,6 @@ def analyze_frame(
         Bond distance thresholds.
     ho_only : bool
         If True, only analyze fragments composed purely of H and O atoms.
-    spin_moments : ndarray of shape (N,), optional
-        Atomic spin moments for current frame.
 
     Returns
     -------
@@ -345,7 +292,7 @@ def analyze_frame(
             if has_other:
                 continue
 
-        species = classify_fragment(frag_indices, elements, bonds, spin_moments)
+        species = classify_fragment(frag_elements)
         species_count[species] += 1
 
     return dict(species_count)
@@ -432,158 +379,15 @@ def parse_cp2k_cell_file(cell_path: str, verbose: bool = True) -> list[float]:
     raise ValueError(f"No data lines found in cell file: {cell_path}")
 
 
-def natural_sort_key(s: str) -> list:
-    """Key function for natural sorting of filenames containing numbers (e.g. R1, R2... R10)."""
-    return [int(text) if text.isdigit() else text.lower() for text in re.split(r'(\d+)', str(s))]
-
-
-def extract_or_load_mulliken_spins(
-    out_files: list[str],
-    cache_path: str,
-    n_atoms: int = 823,
-    verbose: bool = True,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Load or extract Mulliken spin moments and net charges from CP2K .out logs.
-
-    Parameters
-    ----------
-    out_files : list of str
-        CP2K .out log file paths.
-    cache_path : str
-        Path to save/load .npz cache file.
-    n_atoms : int
-        Number of atoms in system.
-    verbose : bool
-        Print progress.
-
-    Returns
-    -------
-    spins : ndarray of shape (n_frames, n_atoms)
-    charges : ndarray of shape (n_frames, n_atoms)
-    """
-    cache_file = Path(cache_path)
-    if cache_file.exists():
-        if verbose:
-            print(f"  [Mulliken] Loading spin/charge cache: {cache_file}")
-        data = np.load(cache_file)
-        return data["spins"], data["charges"]
-
-    valid_out_files = sorted([f for f in out_files if Path(f).exists()], key=natural_sort_key)
-    if not valid_out_files:
-        if verbose:
-            print("  [Mulliken] No CP2K .out log files found for spin extraction.")
-        return np.zeros((0, n_atoms), dtype=np.float32), np.zeros((0, n_atoms), dtype=np.float32)
-
-    if verbose:
-        print(f"  [Mulliken] Extracting spin/charge data from {len(valid_out_files)} CP2K .out log(s)...")
-
-    all_spins = []
-    all_charges = []
-    seen_steps = set()
-
-    for out_idx, out_file in enumerate(valid_out_files):
-        if verbose:
-            print(f"    Parsing {Path(out_file).name}...")
-
-        with open(out_file, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
-
-        idx = 0
-        n_lines = len(lines)
-        file_frames = 0
-        current_step = None
-        first_mulliken_in_file = True
-
-        while idx < n_lines:
-            line = lines[idx]
-            if "MD| Step number" in line:
-                try:
-                    current_step = int(line.split()[-1])
-                except (ValueError, IndexError):
-                    pass
-                idx += 1
-            elif "Mulliken Population Analysis" in line:
-                # For continuation log files (R2, R3...), skip the initial restart evaluation block
-                if out_idx > 0 and first_mulliken_in_file:
-                    first_mulliken_in_file = False
-                    idx += 1
-                    continue
-
-                first_mulliken_in_file = False
-
-                # Deduplicate restart overlap frames if step number is repeated
-                if current_step is not None and current_step in seen_steps:
-                    idx += 1
-                    continue
-
-                idx += 1
-                while idx < n_lines and not lines[idx].strip().startswith("#"):
-                    idx += 1
-                if idx < n_lines and lines[idx].strip().startswith("#"):
-                    idx += 1
-
-                frame_spins = np.zeros(n_atoms, dtype=np.float32)
-                frame_charges = np.zeros(n_atoms, dtype=np.float32)
-                atom_count = 0
-
-                while idx < n_lines and atom_count < n_atoms:
-                    l = lines[idx].strip()
-                    if not l or l.startswith("!") or l.startswith("#") or "Integrated" in l:
-                        break
-                    tokens = l.split()
-                    if len(tokens) >= 7 and tokens[0].isdigit():
-                        try:
-                            atom_idx = int(tokens[0]) - 1
-                            net_charge = float(tokens[5])
-                            spin_moment = float(tokens[6])
-                            if 0 <= atom_idx < n_atoms:
-                                frame_spins[atom_idx] = spin_moment
-                                frame_charges[atom_idx] = net_charge
-                                atom_count += 1
-                        except (ValueError, IndexError):
-                            pass
-                    idx += 1
-
-                if atom_count == n_atoms:
-                    all_spins.append(frame_spins)
-                    all_charges.append(frame_charges)
-                    if current_step is not None:
-                        seen_steps.add(current_step)
-                    file_frames += 1
-            else:
-                idx += 1
-
-        if verbose:
-            print(f"      Extracted {file_frames} unique frames from {Path(out_file).name}")
-
-    if not all_spins:
-        if verbose:
-            print("  [Mulliken] Warning: No complete Mulliken blocks found in logs.")
-        return np.zeros((0, n_atoms), dtype=np.float32), np.zeros((0, n_atoms), dtype=np.float32)
-
-    spins_arr = np.array(all_spins, dtype=np.float32)
-    charges_arr = np.array(all_charges, dtype=np.float32)
-
-    cache_file.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(cache_file, spins=spins_arr, charges=charges_arr)
-    if verbose:
-        print(f"  [Mulliken] Extracted total {len(spins_arr)} frames. Saved cache to: {cache_file}")
-
-    return spins_arr, charges_arr
-
-
 def run_analysis(
     xyz_path: str,
     cell: Optional[list[float]] = None,
-    r_oh: float = 1.30,
-    r_oo: float = 1.50,
-    r_hh: float = 0.80,
+    r_oh: float = 1.2,
+    r_oo: float = 1.6,
+    r_hh: float = 0.9,
     stride: int = 1,
-    start_frame: int = 0,
     timestep: Optional[float] = None,
     ho_only: bool = True,
-    cp2k_out_files: Optional[list[str]] = None,
-    mulliken_cache: Optional[str] = None,
     verbose: bool = True,
 ) -> pd.DataFrame:
     """Run species analysis on a CP2K XYZ trajectory.
@@ -606,10 +410,6 @@ def run_analysis(
         Override timestep (fs) between frames. If None, parse from XYZ.
     ho_only : bool
         Only analyze H/O fragments.
-    cp2k_out_files : list of str, optional
-        List of CP2K .out log files to extract Mulliken population data from.
-    mulliken_cache : str, optional
-        Path to load/save Mulliken spin cache (.npz).
     verbose : bool
         Print progress.
 
@@ -640,41 +440,27 @@ def run_analysis(
 
     # Element array (constant across frames for CP2K)
     elements = np.array(u.atoms.names)
-    n_atoms = len(elements)
-
-    # Load / Extract Mulliken spin moments
-    spin_matrix = None
-    if cp2k_out_files or mulliken_cache:
-        cache_p = mulliken_cache or "mulliken_spins_cache.npz"
-        out_files = cp2k_out_files or []
-        spins_arr, _ = extract_or_load_mulliken_spins(out_files, cache_p, n_atoms=n_atoms, verbose=verbose)
-        if len(spins_arr) > 0:
-            spin_matrix = spins_arr
 
     # Collect results
     records = []
     all_species = set()
-    frames_to_analyze = range(start_frame, n_frames_total, stride)
+    frames_to_analyze = range(0, n_frames_total, stride)
     n_analyze = len(frames_to_analyze)
 
     for count, frame_idx in enumerate(frames_to_analyze):
         ts = u.trajectory[frame_idx]
         positions = ts.positions.copy()
 
+        # Try to parse step/time from the comment line
+        # MDAnalysis stores the raw data; we read it separately
         step_i = frame_idx
         time_fs_i = frame_idx * (timestep or 0.5)  # default 0.5 fs
-
-        # Get spin moments for this frame if available
-        frame_spins = None
-        if spin_matrix is not None and frame_idx < len(spin_matrix):
-            frame_spins = spin_matrix[frame_idx]
 
         # Analyze species
         species_count = analyze_frame(
             positions, elements, box,
             r_oh=r_oh, r_oo=r_oo, r_hh=r_hh,
             ho_only=ho_only,
-            spin_moments=frame_spins,
         )
 
         record = {
@@ -900,16 +686,16 @@ def parse_args():
              "Ignored if --cell is specified.",
     )
     parser.add_argument(
-        "--roh", type=float, default=1.30,
-        help="O-H bond distance threshold in Å (default: 1.30)",
+        "--roh", type=float, default=1.2,
+        help="O-H bond distance threshold in Å (default: 1.2)",
     )
     parser.add_argument(
-        "--roo", type=float, default=1.50,
-        help="O-O bond distance threshold in Å (default: 1.50)",
+        "--roo", type=float, default=1.6,
+        help="O-O bond distance threshold in Å (default: 1.6)",
     )
     parser.add_argument(
-        "--rhh", type=float, default=0.8,
-        help="H-H bond distance threshold in Å (default: 0.8)",
+        "--rhh", type=float, default=0.9,
+        help="H-H bond distance threshold in Å (default: 0.9)",
     )
     parser.add_argument(
         "--stride", type=int, default=1,
@@ -935,17 +721,7 @@ def parse_args():
         "--quiet", "-q", action="store_true",
         help="Suppress progress output",
     )
-    parser.add_argument(
-        "--cp2k-out", nargs="+", type=str, default=None,
-        help="CP2K .out log files (e.g. aimd_nofield-R1.out aimd_nofield-R2.out aimd_nofield-R3.out) for Mulliken spin extraction",
-    )
-    parser.add_argument(
-        "--mulliken-cache", type=str, default=None,
-        help="Path to Mulliken spin cache npz file (default: mulliken_spins_cache.npz in output dir)",
-    )
 
-    import equilibration_utils
-    parser = equilibration_utils.add_equilibration_args(parser)
     return parser.parse_args()
 
 
@@ -979,54 +755,7 @@ def main():
         print(f"  Output:      {output_dir}")
         print()
 
-    # Equilibration detection — cut BEFORE analysis
-    import equilibration_utils
-    base_dir = Path(args.xyz).parent
-    ener_path = base_dir / getattr(args, "equil_ener_file", "trajectory.ener")
-    
-    # We want to do a fast fallback if ener is not available.
-    if not ener_path.exists() and getattr(args, "equil_auto", False):
-        if not args.quiet:
-            print("    [Equilibration] Computing fallback timeseries (n_atoms) from MDAnalysis metadata...")
-        # fallback by simply tracking n_atoms in the box
-        import MDAnalysis as mda
-        u_temp = mda.Universe(args.xyz)
-        fallback_ts = np.array([len(u_temp.atoms) for _ in range(0, u_temp.trajectory.n_frames, args.stride)])
-        fallback_obs = "n_atoms"
-    else:
-        fallback_ts = None
-        fallback_obs = "n_atoms"
-
-    t0_raw, g, Neff, actual_obs, ts_signal = equilibration_utils.resolve_equilibration_start(
-        args, fallback_timeseries=fallback_ts, fallback_observable=fallback_obs,
-        sample_interval=args.stride, base_dir=base_dir
-    )
-    if ts_signal is not None and len(ts_signal) > 0:
-        if actual_obs in {"potential_energy", "temperature", "kinetic_energy", "conserved_quantity"}:
-            time_arr_fs = np.arange(len(ts_signal)) * (args.timestep or 0.5)
-        else:
-            time_arr_fs = np.arange(len(ts_signal)) * args.stride * (args.timestep or 0.5)
-    else:
-        time_arr_fs = np.array([])
-    equilibration_utils.generate_equilibration_report_and_plot(
-        t0_raw, g, Neff, ts_signal, time_arr_fs, actual_obs, output_dir
-    )
-    if t0_raw > 0:
-        if not args.quiet:
-            print(f"    [Equilibration] Discarding first {t0_raw} raw frames as equilibration phase.")
-
-    # Auto-detect CP2K out files if not explicitly provided
-    cp2k_outs = args.cp2k_out
-    if cp2k_outs is None:
-        default_outs = sorted([str(p) for p in base_dir.glob("*.out")], key=natural_sort_key)
-        if default_outs:
-            cp2k_outs = default_outs
-
-    mulliken_cache_path = args.mulliken_cache
-    if mulliken_cache_path is None:
-        mulliken_cache_path = str(output_dir / "mulliken_spins_cache.npz")
-
-    # Run analysis on production frames only
+    # Run analysis
     df = run_analysis(
         xyz_path=args.xyz,
         cell=cell,
@@ -1034,15 +763,10 @@ def main():
         r_oo=args.roo,
         r_hh=args.rhh,
         stride=args.stride,
-        start_frame=t0_raw,
         timestep=args.timestep,
         ho_only=not args.include_substrate,
-        cp2k_out_files=cp2k_outs,
-        mulliken_cache=mulliken_cache_path,
         verbose=not args.quiet,
     )
-    if not args.quiet:
-        print(f"    [Equilibration] Production phase frames analyzed: {len(df)}\n")
 
     # Save CSV
     csv_path = output_dir / "species_counts.csv"
