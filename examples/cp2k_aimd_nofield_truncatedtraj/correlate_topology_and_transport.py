@@ -54,6 +54,8 @@ def parse_args():
                         help='Directory containing topoHBNet topological ML results')
     parser.add_argument('--proton-dir', type=str, default='proton_transfer_results',
                         help='Directory containing proton transfer and dynamics results')
+    parser.add_argument('--species-dir', type=str, default=None,
+                        help='Directory containing reactive species analysis results (e.g. trajectory_species_results_mulliken). If None, auto-detected.')
     parser.add_argument('--output-dir', '-o', type=str, default='topology_transport_correlation_results',
                         help='Output directory for correlation analysis')
     parser.add_argument('--n-clusters', type=int, default=0,
@@ -94,8 +96,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_datasets(topo_dir: Path, proton_dir: Path):
-    """Load and merge topological and transport datasets."""
+def load_datasets(topo_dir: Path, proton_dir: Path, species_dir: Optional[Path] = None):
+    """Load and merge topological, transport, and reactive species datasets."""
     # Paths to files
     topo_csv = topo_dir / "raw_data_csv" / "dynamics_topology.csv"
     pca_csv = topo_dir / "raw_data_csv" / "ml_pca_components.csv"
@@ -164,12 +166,36 @@ def load_datasets(topo_dir: Path, proton_dir: Path):
     # Then merge with proton dynamics
     df_merged = pd.merge_asof(df_topo_merged, df_proton, on="Time_fs", direction="nearest")
 
+    # Optionally load reactive species analysis results if available
+    species_cols = []
+    if species_dir is None:
+        # Auto-detect potential species directories in parent directory
+        base_dir = topo_dir.parent
+        for candidate in ["trajectory_species_results_mulliken", "trajectory_species_results"]:
+            cand_path = base_dir / candidate
+            if (cand_path / "species_counts.csv").exists():
+                species_dir = cand_path
+                break
+
+    if species_dir is not None and (species_dir / "species_counts.csv").exists():
+        species_csv = species_dir / "species_counts.csv"
+        print(f"Loading reactive species populations from: {species_csv}")
+        df_species = pd.read_csv(species_csv)
+        if "time_fs" in df_species.columns:
+            df_species = df_species.rename(columns={"time_fs": "Time_fs"})
+        # Drop redundant metadata columns if present
+        df_species = df_species.drop(columns=[c for c in ["frame", "step"] if c in df_species.columns])
+        df_species = df_species.sort_values("Time_fs")
+        species_cols = [c for c in df_species.columns if c != "Time_fs"]
+        df_merged = pd.merge_asof(df_merged, df_species, on="Time_fs", direction="nearest")
+        print(f"  Loaded reactive species columns: {species_cols}")
+
     # Drop potential duplicates and clean
     if "Frame" in df_merged.columns:
         df_merged = df_merged.drop(columns=["Frame"])
 
     print(f"Successfully aligned and merged dataset: {df_merged.shape[0]} frames.")
-    return df_merged, state_cols
+    return df_merged, state_cols, species_cols
 
 
 def plot_correlation_heatmap(df: pd.DataFrame, topo_cols: list, transport_cols: list, output_path: Path):
@@ -637,7 +663,8 @@ def main():
 
     # 1. Load and merge datasets
     try:
-        df, state_cols = load_datasets(topo_dir, proton_dir)
+        species_dir_path = Path(args.species_dir) if args.species_dir else None
+        df, state_cols, species_cols = load_datasets(topo_dir, proton_dir, species_dir_path)
     except Exception as e:
         print(f"Error loading datasets: {e}")
         print("Please check that both --topo-dir and --proton-dir have completed run-ml/timeseries files.")
@@ -676,6 +703,8 @@ def main():
     if state_cols:
         topo_cols.extend(state_cols)
     transport_cols = ["LBHB_Fraction", "Avg_Wire_Length", "Hodge_Gradient_Pct", "Hodge_Curl_Pct", "Hodge_Harmonic_Pct"]
+    if species_cols:
+        transport_cols.extend([c for c in species_cols if c not in transport_cols])
 
     # Save aligned dataset to CSV
     merged_csv = output_dir / "aligned_topology_transport.csv"
