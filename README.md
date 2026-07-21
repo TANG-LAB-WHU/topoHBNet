@@ -4,19 +4,20 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Analyze hydrogen bond (H-bond) network topology from molecular dynamics trajectories (LAMMPS, CP2K) using **Topological Data Analysis (TDA)** and the **TopoX Suite** (TopoNetX, TopoModelX, TopoEmbedX). Supports Betti number analysis, persistent homology, and Topological Machine Learning (TML).
+Analyze hydrogen bond (H-bond) network topology from molecular dynamics trajectories (LAMMPS, CP2K) using **Topological Data Analysis (TDA)**, **TopoX Suite** (TopoNetX, TopoModelX, TopoEmbedX), and **Symbolic Regression (PySR / SINDy)**. Supports Betti number analysis, persistent homology, Topological Machine Learning (TML), and automated discovery of analytical physical laws governing transport dynamics.
 
 ## Overview
 
-This package provides topological data analysis tools for studying the dynamics of hydrogen bond networks in water and aqueous systems.
+This package provides topological data analysis and symbolic regression tools for studying the dynamics of hydrogen bond networks, proton transfer mechanisms, and reactive species in water and aqueous interfacial systems.
 
-### TopoX Library Roles
+### TopoX & Discovery Library Roles
 
-| Library | Function | Application in H-bond Analysis |
-|---------|----------|-------------------------------|
+| Library / Module | Function | Application in H-bond Analysis |
+|------------------|----------|-------------------------------|
 | **TopoNetX** | Topological data structures (SimplicialComplex, CellComplex) | Build topological representation of H-bond networks |
-| **TopoModelX** | Topological Neural Networks (TNN) | Learn dynamic features of H-bond networks |
-| **TopoEmbedX** | Topological embedding algorithms (Cell2Vec, HOPE) | Generate low-dimensional representations |
+| **TopoModelX** | Topological Neural Networks (TNN) | Learn dynamic features and embeddings of H-bond networks |
+| **TopoEmbedX** | Topological embedding algorithms (Cell2Vec, HOPE) | Generate low-dimensional representation vectors |
+| **PySR / SINDy** | Symbolic Regression & Sparse Identification | Discover explicit, analytical physical equations relating topology to transport |
 
 ---
 
@@ -24,18 +25,20 @@ This package provides topological data analysis tools for studying the dynamics 
 
 ```mermaid
 flowchart TD
-    A[MD Trajectory<br/>LAMMPS/CP2K] --> B[Parse Atomic Coordinates]
-    B --> C[Identify Water Molecules<br/>O-H Pairs]
+    A[MD Trajectory<br/>LAMMPS/CP2K/Mulliken] --> B[Parse Atomic Coordinates & Spins]
+    B --> C[Identify Species & Fragments<br/>*OH, H3O+, LBHB]
     C --> D[H-bond Detection<br/>Geometric Criteria]
     D --> E[Build H-bond Graph<br/>NetworkX Graph]
     E --> F[Convert to Topology<br/>TopoNetX SimplicialComplex]
     F --> G1[Compute Invariants<br/>Betti Numbers, Laplacians]
     F --> G2[Topological Embedding<br/>TopoEmbedX]
     F --> G3[Topological Neural Network<br/>TopoModelX]
-    G1 --> H[Time Series Analysis]
+    F --> G4[Symbolic Regression<br/>PySR / SINDy]
+    G1 --> H[Time Series & Hodge Flow]
     G2 --> H
     G3 --> H
-    H --> I[H-bond Network Dynamics]
+    G4 --> I[Discovered Physical Laws<br/>Analytical Equations]
+    H --> I
 ```
 
 ---
@@ -162,12 +165,18 @@ python topoHBNet_main_analysis.py --trajectory examples/trajectory.xyz --run-ml 
 ### Command Line
 
 ```bash
-# Basic analysis
+# Basic trajectory analysis
 python run_analysis.py trajectory.lammpstrj --output results/
 
 # Analysis with Topological Machine Learning (TML)
-# From examples/cp2k_aimd/:
 python topoHBNet_main_analysis.py --trajectory trajectory.xyz --run-ml --ml-dim 16
+
+# Correlate H-bond topology with transport & run Symbolic Regression (PySR)
+python correlate_topology_and_transport.py \
+    --topo-dir topoHBNet-run-ml \
+    --proton-dir proton_transfer_results \
+    --target-species *OH H3O+ \
+    --run-pysr --pysr-procs 16
 ```
 
 ### Python API
@@ -260,22 +269,27 @@ hbond_topology/
 │   └── hbond_detector.py       # H-bond detection with PBC
 ├── topology/
 │   ├── complex_builder.py      # TopoNetX construction
-│   ├── invariants.py           # Topological invariants
+│   ├── invariants.py           # Topological invariants (Betti-0/1/2, Euler)
 │   └── persistence.py          # Gudhi persistence homology
 ├── embedding/
 │   └── embedder.py             # TopoEmbedX (Cell2Vec, HOPE)
 ├── learning/
 │   ├── tnn_model.py            # HBondTNN, HBondGNN
-│   └── gnn_enhanced_tnn.py     # GNN-Enhanced TNN (experimental)
+│   ├── gnn_enhanced_tnn.py     # GNN-Enhanced TNN (hybrid model)
+│   └── discovery.py            # PySR Symbolic Regression & SINDy physics discovery
 ├── analysis/
-│   ├── dynamics.py             # Trajectory analysis
-│   └── visualization.py        # Plotting
+│   ├── dynamics.py             # Trajectory dynamics
+│   ├── interfacial.py          # Interfacial water partitioning & spatial profiles
+│   ├── proton_dynamics.py      # PMF, Wire length & Mulliken spin extraction
+│   ├── persistence_visualizer.py
+│   └── visualization.py        # Plotting & heatmaps
 └── scripts/
     └── run_analysis.py         # CLI entry point
 
 examples/
-├── lammps/                     # LAMMPS trajectory examples
-└── cp2k_aimd/                  # CP2K AIMD XYZ trajectory examples
+└── cp2k_aimd_*/                # 12 AIMD examples (field/nofield, interface/bulk, truncated)
+    ├── correlate_topology_and_transport.py  # PySR & RF correlation pipeline
+    └── trajectory_species_analysis.py       # Mulliken spin & species identification
 ```
 
 ---
@@ -284,11 +298,15 @@ examples/
 
 | File | Description |
 |------|-------------|
-| `analysis_results.json` | Full results for each frame |
+| `analysis_results.json` | Full topological invariants for each frame |
 | `statistics_summary.json` | Summary statistics and TML parameters |
-| `betti_dynamics.png` | Betti numbers (β₀, β₁, β₂) over time |
-| `persistence_barcode.png` | TDA Persistent Homology Barcode |
-| `similarity_heatmap.png` | Inter-frame topological similarity heatmap |
+| `betti_dynamics.png` | Betti numbers (β₀, β₁, β₂) time series |
+| `discovered_physical_law_{target}.md` | Discovered analytical physical equations from PySR |
+| `target_selection_report.json / .csv` | Target variable evaluation and variance diagnostic report |
+| `raw_data_csv/all_species_topological_r2_scores.csv` | Full Random Forest R² predictability leaderboard across species |
+| `raw_data_csv/topological_feature_importance_{target}.csv` | Feature importance ranking of topological invariants |
+| `raw_data_csv/pysr_consensus_equations_{target}.csv` | Voting consensus table of physical equations discovered by PySR |
+| `raw_data_csv/topological_states_profiles.csv` | K-Means topological state profiles and transport properties |
 | `embedding_pca.png` | PCA projection of topological embeddings |
 | `frame_embeddings.npy` | Raw topological embedding vectors |
 
@@ -373,6 +391,27 @@ out = model(
 )
 ```
 
+### Symbolic Regression & Physical Law Discovery (PySR)
+
+```python
+from hbond_topology.learning.discovery import SymbolicRegressor
+
+# Discover analytical equations relating topological invariants to transport
+regressor = SymbolicRegressor(
+    niterations=100,
+    binary_operators=["+", "*", "-", "/"],
+    unary_operators=["exp", "log", "sqrt"],
+    model_selection="best"
+)
+
+# Fit topological invariants against target transport property
+regressor.fit(X_topo, y_transport, feature_names=["betti_0", "betti_1", "euler_characteristic", "LBHB_Fraction"])
+
+# Discovered explicit physical formula
+print("Discovered Law:", regressor.get_best_equation())
+print("Pareto Front Equations:\n", regressor.get_pareto_front())
+```
+
 ---
 
 ## Technical Notes
@@ -381,7 +420,7 @@ out = model(
 
 > **Large Trajectories**: For long trajectories, consider batch processing with `--start`, `--stop`, `--step` flags.
 
-> **GPU Acceleration**: TopoModelX utilizes PyTorch for GPU-accelerated TNNs. The package automatically detects CUDA and supports high-performance GPUs (including NVIDIA RTX 5080 / Blackwell).
+> **GPU Acceleration**: TopoModelX utilizes PyTorch for GPU-accelerated TNNs. The package automatically detects CUDA and supports high-performance GPUs (including NVIDIA RTX 5080 5090 / Blackwell).
 
 ---
 
