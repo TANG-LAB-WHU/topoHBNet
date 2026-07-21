@@ -50,6 +50,7 @@ htmlcov/
 # Analysis outputs
 results/
 results_*/
+trajectory_species_analysis_audit.md
 # topoHBNet-run-ml/
 # topoHBNet-no_run-ml/
 # interfacial_analysis_results/
@@ -68,6 +69,11 @@ results_*/
 *.cell
 *.extxyz
 *.ener
+aimd_*.out
+*.npz
+*.restart
+*.wfn
+*.stress
 ml_similarity_matrix.csv
 aimd_energetics_combined.svg
 
