@@ -40,7 +40,7 @@ flowchart TD
 
 ---
 
-## 🐧/🪟 Windows (CUDA) Deployment Guide
+## Windows (CUDA) Deployment Guide
 
 ### Prerequisites: Environment Setup
 
@@ -99,7 +99,7 @@ pip install -e ".[full]"
 
 ---
 
-## 🍏 macOS (Apple Silicon) Deployment Guide
+## macOS (Apple Silicon) Deployment Guide
 
 For users with Apple Silicon (M1/M2/M3/M4) MacBooks, Apple uses Metal Performance Shaders (MPS) instead of NVIDIA CUDA. Additionally, compiling the underlying PyG graph computation libraries directly using Mac's default Clang compiler often triggers C++ template compilation errors.
 
