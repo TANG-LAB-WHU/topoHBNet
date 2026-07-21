@@ -54,8 +54,8 @@ def parse_args():
                         help='Directory containing topoHBNet topological ML results')
     parser.add_argument('--proton-dir', type=str, default='proton_transfer_results',
                         help='Directory containing proton transfer and dynamics results')
-    parser.add_argument('--species-dir', type=str, default=None,
-                        help='Directory containing reactive species analysis results (e.g. trajectory_species_results_mulliken). If None, auto-detected.')
+    parser.add_argument('--species-dir', type=str, default='trajectory_species_results_mulliken',
+                        help='Directory containing reactive species analysis results (default: trajectory_species_results_mulliken).')
     parser.add_argument('--output-dir', '-o', type=str, default='topology_transport_correlation_results',
                         help='Output directory for correlation analysis')
     parser.add_argument('--n-clusters', type=int, default=0,
