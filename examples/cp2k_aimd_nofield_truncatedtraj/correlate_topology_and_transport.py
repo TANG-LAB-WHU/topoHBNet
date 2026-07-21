@@ -715,10 +715,21 @@ def main():
     analyze_topological_states(df, args.n_clusters, output_dir)
 
     # 4. Feature Importance using RandomForest
-    # Prioritize active species (*OH, OH-) as ML and PySR targets if available, fallback to LBHB
+    # Prioritize active species (*OH, OH-) as ML and PySR targets based on strict chemical significance
     target_candidates = []
     if species_cols:
-        target_candidates.extend(species_cols)
+        # Define a scientific priority queue for reactive species
+        chemical_priority = ["*OH", "OH-", "H2O2", "H3O+", "HO2*", "O2-", "O*", "H*"]
+        # 1. Add high-priority species that exist in the data
+        for sp in chemical_priority:
+            if sp in species_cols:
+                target_candidates.append(sp)
+        # 2. Add remaining species EXCEPT boring bulk solvents
+        boring_solvents = {"H2O", "(H2O)2", "H5O2"}
+        for sp in species_cols:
+            if sp not in target_candidates and sp not in boring_solvents:
+                target_candidates.append(sp)
+                
     target_candidates.extend(["LBHB_Fraction", "Hodge_Harmonic_Pct", "Hodge_Gradient_Pct"])
     
     predict_transport_from_topology(df, topo_cols, target_candidates, output_dir)
