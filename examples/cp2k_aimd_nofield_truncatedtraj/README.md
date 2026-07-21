@@ -145,7 +145,7 @@ The scripts expect the following CP2K AIMD simulation files (defaults are automa
 - `trajectory.xyz`: Molecular atomic coordinates for each frame (required for H-bond topology, interfacial, and species analysis).
 - `trajectory.cell`: Time-dependent periodic cell dimensions or static box vectors (required for PBC distance array calculations).
 - `trajectory.ener`: CP2K energy, temperature, and conserved quantity log (required for simulation energetics visualization).
-- `aimd_*.out` (or `aimd_nofield-R*.out`): CP2K main calculation log files containing `Mulliken Population Analysis` tables (optional/recommended for `trajectory_species_analysis.py` to extract atomic spin moments for 100% quantum-mechanically decoupling `OH-` anions from `*OH` radicals).
+- `aimd_*.out`: CP2K main calculation log files containing `Mulliken Population Analysis` tables (optional/recommended for `trajectory_species_analysis.py` to extract atomic spin moments for 100% quantum-mechanically decoupling `OH-` anions from `*OH` radicals).
 
 ## Directory Structure
 
@@ -153,6 +153,6 @@ The scripts expect the following CP2K AIMD simulation files (defaults are automa
 - `visualization_aimd_energetics/`: Detailed README and results for energetics.
 - `interfacial_analysis_results/`: Results and visualization of the interfacial water analysis.
 - `proton_transfer_results/`: Results and visualizations for proton transfer and Hodge flow dynamics.
-- `topology_transport_correlation_results/`: Cross-correlation heatmaps, state-profiling, topological feature importance datasets, and discovered analytical physical laws (`discovered_physical_law.txt`).
+- `topology_transport_correlation_results/`: Cross-correlation heatmaps, state-profiling, topological feature importance datasets, and discovered analytical physical laws (`discovered_physical_law.md`).
 - `topoHBNet-run-ml/`: Main topological and machine learning output.
 - `topoHBNet-no_run-ml/`: Main topological output.
