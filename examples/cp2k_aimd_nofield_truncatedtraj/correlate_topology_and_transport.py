@@ -368,17 +368,14 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     return profiles_dict
 
 
-def predict_transport_from_topology(df: pd.DataFrame, topo_cols: list, output_dir: Path):
-    """Fit a Random Forest to predict transport efficiency/LBHBs from topology and plot feature importance."""
+def predict_transport_from_topology(df: pd.DataFrame, topo_cols: list, target_candidates: list, output_dir: Path):
+    """Fit a Random Forest to predict transport efficiency/reactive species from topology and plot feature importance."""
     if not HAS_SKLEARN:
         return
 
-    # Check if target has variance
-    targets = ["LBHB_Fraction", "Hodge_Harmonic_Pct", "Hodge_Gradient_Pct"]
-    target_var = "LBHB_Fraction"
-    
     # Check if target has variance, fallback if not
-    for t in targets:
+    target_var = target_candidates[0] if target_candidates else "LBHB_Fraction"
+    for t in target_candidates:
         if t in df.columns and df[t].std() > 1e-6:
             target_var = t
             break
@@ -718,13 +715,19 @@ def main():
     analyze_topological_states(df, args.n_clusters, output_dir)
 
     # 4. Feature Importance using RandomForest
-    predict_transport_from_topology(df, topo_cols, output_dir)
+    # Prioritize active species (*OH, OH-) as ML and PySR targets if available, fallback to LBHB
+    target_candidates = []
+    if species_cols:
+        target_candidates.extend(species_cols)
+    target_candidates.extend(["LBHB_Fraction", "Hodge_Harmonic_Pct", "Hodge_Gradient_Pct"])
+    
+    predict_transport_from_topology(df, topo_cols, target_candidates, output_dir)
 
     # 5. Symbolic Regression (Optional physical law discovery)
     if args.run_pysr:
-        # We determine the target dynamically just like RandomForest
-        target_var = "LBHB_Fraction"
-        for t in transport_cols:
+        # We determine the target dynamically prioritizing species
+        target_var = target_candidates[0]
+        for t in target_candidates:
             if t in df.columns and df[t].std() > 1e-6:
                 target_var = t
                 break
