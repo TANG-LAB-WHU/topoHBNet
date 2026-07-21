@@ -51,15 +51,17 @@ htmlcov/
 results/
 results_*/
 trajectory_species_analysis_audit.md
-# topoHBNet-run-ml/
-# topoHBNet-no_run-ml/
-# interfacial_analysis_results/
-# trajectory_species_results/
-# visualization_aimd_energetics/
-# raw_data_csv/
+topoHBNet-run-ml/
+topoHBNet-no_run-ml/
+interfacial_analysis_results/
+trajectory_species_results/
+trajectory_species_results_mulliken/
+visualization_aimd_energetics/
+topology_transport_correlation_results*/
+raw_data_csv/
 *.log
 !pyproject.json
-**/pysr_runs/
+**/pysr_runs_*/
 
 # Large data files
 *.lammpstrj
