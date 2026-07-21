@@ -463,7 +463,7 @@ def extract_or_load_mulliken_spins(
         data = np.load(cache_file)
         return data["spins"], data["charges"]
 
-    valid_out_files = [f for f in out_files if Path(f).exists()]
+    valid_out_files = sorted([f for f in out_files if Path(f).exists()], key=natural_sort_key)
     if not valid_out_files:
         if verbose:
             print("  [Mulliken] No CP2K .out log files found for spin extraction.")
@@ -1013,7 +1013,7 @@ def main():
     # Auto-detect CP2K out files if not explicitly provided
     cp2k_outs = args.cp2k_out
     if cp2k_outs is None:
-        default_outs = sorted([str(p) for p in base_dir.glob("*.out")])
+        default_outs = sorted([str(p) for p in base_dir.glob("*.out")], key=natural_sort_key)
         if default_outs:
             cp2k_outs = default_outs
 
