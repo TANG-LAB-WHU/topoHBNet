@@ -140,11 +140,12 @@ Bridges high-dimensional topological representations from machine learning with 
 
 ## Input Requirements
 
-The scripts expect the following files (defaults are typically set for this directory):
+The scripts expect the following CP2K AIMD simulation files (defaults are automatically configured for this directory):
 
-- `trajectory.xyz`: The molecular positions for each frame.
-- `trajectory.cell`: Time-dependent cell dimensions (or static dimensions).
-- `trajectory.ener`: CP2K energy and temperature log.
+- `trajectory.xyz`: Molecular atomic coordinates for each frame (required for H-bond topology, interfacial, and species analysis).
+- `trajectory.cell`: Time-dependent periodic cell dimensions or static box vectors (required for PBC distance array calculations).
+- `trajectory.ener`: CP2K energy, temperature, and conserved quantity log (required for simulation energetics visualization).
+- `aimd_*.out` (or `aimd_nofield-R*.out`): CP2K main calculation log files containing `Mulliken Population Analysis` tables (optional/recommended for `trajectory_species_analysis.py` to extract atomic spin moments for 100% quantum-mechanically decoupling `OH-` anions from `*OH` radicals).
 
 ## Directory Structure
 
