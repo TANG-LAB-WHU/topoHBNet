@@ -47,15 +47,16 @@ This is the central analysis script utilizing the core `topoHBNet` library. It m
 Focuses on detecting chemical transformations and identifying molecular fragments in the liquid phase while excluding the solid substrate.
 
 - **Key Features**:
-  - **PBC-Aware Bond Detection**: Identifies O-H, O-O, and H-H bonds across periodic boundaries.
+  - **PBC-Aware Bond Detection**: Identifies O-H, O-O, and H-H bonds across periodic boundaries (`r_oh` < 1.30 Å, `r_oo` < 1.50 Å).
   - **Graph-Based Fragmentation**: Uses connected components to isolate distinct molecules.
-  - **Substrate Exclusion**: Automatically identifies and filters out surface atoms (Si, C) to focus only on reactive species.
-  - **Stoichiometric Classification**: Categorizes H/O fragments into species like H₂O, H*, *OH, H₂O₂, H₃O⁺, etc.
-- **Primary Output**: `trajectory_species_results/` (contains population counts and evolution plots).
+  - **Substrate Exclusion**: Automatically filters out surface atoms (Si, C, etc.) with physically tuned thresholds (C-O 1.85 Å, Si-O 2.15 Å).
+  - **Quantum Mulliken Spin Decoupling**: Parses CP2K `.out` logs to extract atomic spin moments, decoupling `OH-` (hydroxide anion) from `*OH` (hydroxyl radical) with quantum accuracy.
+  - **Equilibration Detection**: Automatically discards equilibration frames using `--equil-start-frame`.
+- **Primary Output**: `trajectory_species_results/` (contains spin-decoupled `OH-` and `*OH` population counts and evolution plots).
 - **Usage**:
-  - **To generate species analysis results (`trajectory_species_results/`):**
+  - **To generate species analysis results with equilibration filtering:**
     ```bash
-    python trajectory_species_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --output-dir trajectory_species_results
+    python trajectory_species_analysis.py --xyz trajectory.xyz --cell-file trajectory.cell --output-dir trajectory_species_results --equil-start-frame 4000
     ```
 
 ## 3. Simulation Energetics Visualization
@@ -123,27 +124,48 @@ Bridges high-dimensional topological representations from machine learning with 
   - **Feature Importance Regression**: Trains a Random Forest to predict transport efficiency (`Hodge_Gradient_Pct` or `LBHB_Fraction`) from topological invariants and ranks which topological shapes are the strongest physical predictors.
   - **Physics-Guided Symbolic Regression (`--run-pysr`)**: Automatically runs PySR (Symbolic Regression via Genetic Programming) to discover explicit, publishable analytical physical laws. 
     > [!IMPORTANT]
-    > **Physics Guidance**: In this discovery step, abstract neural network coordinates (`PC1`, `PC2`) are automatically filtered out. Restricting the feature space strictly to physically interpretable topological invariants ($\beta_1$, Euler, $n_{\text{hbonds}}$, etc.) ensures that the discovered mathematical equation has well-defined physical units and clear mechanistic interpretability.
-- **Primary Output**: `topology_transport_correlation_results/` (contains correlation heatmaps, state-profiling bar charts, topological state clustering plots, feature importance horizontal bars, aligned CSV/JSON datasets, and `discovered_physical_law.txt` when `--run-pysr` is enabled).
+    > **Physics Guidance**: In this discovery step, abstract neural network coordinates (`PC1`, `PC2`) are automatically filtered out. Restricting the feature space strictly to physically interpretable topological invariants ($\beta_1$, Euler, $n_{\text{hbonds}}$, donor/acceptor H-bond states like `state_2D0A`, `state_1D1A`) ensures that the discovered mathematical equation has well-defined physical units and clear mechanistic interpretability.
+  - **Multi-Run Stability Selection**: Performs consensus voting across independent evolutionary runs (e.g. 10 runs) to identify robust physical equations and ranks invariant feature stability, Outputting a detailed report in `discovered_physical_law.md`.
+- **Primary Output**: `topology_transport_correlation_results/` (contains correlation heatmaps, state-profiling bar charts, topological state clustering plots, feature importance horizontal bars, aligned CSV/JSON datasets, and consensus report `discovered_physical_law.md` when `--run-pysr` is enabled).
+- **Discovered Analytical Physical Law Example**:
+  From multi-run stability selection on the `LBHB_Fraction` target, PySR discovers the consensus equation:
+
+$$
+\text{LBHB}\textunderscore\text{Fraction} \approx -3.11 \times 10^{-5} \cdot \text{state}\textunderscore\text{1D1A} \cdot \exp(-\text{state}\textunderscore\text{2D0A}) + 0.00111
+$$
+
+  where `state_2D0A` (donor defect water, 78.1% stability score) and `state_1D1A` (wire/chain intermediate, 46.1% stability score) are identified as the primary physical drivers of proton transport efficiency.
 - **Usage**:
   - **To generate standard correlation and Random Forest regression:**
     ```bash
     python correlate_topology_and_transport.py --topo-dir topoHBNet-run-ml --proton-dir proton_transfer_results --output-dir topology_transport_correlation_results
     ```
-  - **To trigger Symbolic Regression and automatically discover physical laws:**
+  - **To trigger Symbolic Regression locally and discover physical laws:**
     ```bash
     python correlate_topology_and_transport.py --topo-dir topoHBNet-run-ml --proton-dir proton_transfer_results --output-dir topology_transport_correlation_results --run-pysr
     ```
+  - **HPC Cluster Execution (Required for Publication-Quality Physical Equations):**
+    ```bash
+    sbatch run_correlation_pysr.sh
+    ```
+    > [!IMPORTANT]
+    > **Publication Requirement**: While local execution with `--run-pysr` is suitable for rapid testing, **equations intended for academic publication MUST be generated by submitting `run_correlation_pysr.sh` on an HPC cluster**.
+    > 
+    > **Why HPC Execution is Necessary**:
+    > - **Massive Core Allocation**: Allocates 192 CPU cores (e.g., SLURM `9a14a` partition on Wuhan University Supercomputer Center) to perform parallel multi-run Genetic Programming across tens of thousands of candidate equations.
+    > - **Thread Explosion Prevention**: Configures Julia and math environment variables (`JULIA_NUM_THREADS=1`, `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`) so 192 independent PySR worker processes run without thread contention.
+    > - **Multi-Run Stability Selection**: Executes 10+ independent evolutionary runs with different random seeds to perform consensus voting, guaranteeing that the final mathematical law (`discovered_physical_law.md`) is statistically stable, highly universal, and free from single-run local minima artifacts.
 
 ---
 
 ## Input Requirements
 
-The scripts expect the following files (defaults are typically set for this directory):
+The scripts expect the following CP2K AIMD simulation files (defaults are automatically configured for this directory):
 
-- `trajectory.xyz`: The molecular positions for each frame.
-- `trajectory.cell`: Time-dependent cell dimensions (or static dimensions).
-- `trajectory.ener`: CP2K energy and temperature log.
+- `trajectory.xyz`: Molecular atomic coordinates for each frame (required for H-bond topology, interfacial, and species analysis).
+- `trajectory.cell`: Time-dependent periodic cell dimensions or static box vectors (required for PBC distance array calculations).
+- `trajectory.ener`: CP2K energy, temperature, and conserved quantity log (required for simulation energetics visualization).
+- `aimd_*.out`: CP2K main calculation log files containing `Mulliken Population Analysis` tables (optional/recommended for `trajectory_species_analysis.py` to extract atomic spin moments for 100% quantum-mechanically decoupling `OH-` anions from `*OH` radicals).
 
 ## Directory Structure
 
@@ -151,6 +173,6 @@ The scripts expect the following files (defaults are typically set for this dire
 - `visualization_aimd_energetics/`: Detailed README and results for energetics.
 - `interfacial_analysis_results/`: Results and visualization of the interfacial water analysis.
 - `proton_transfer_results/`: Results and visualizations for proton transfer and Hodge flow dynamics.
-- `topology_transport_correlation_results/`: Cross-correlation heatmaps, state-profiling, topological feature importance datasets, and discovered analytical physical laws (`discovered_physical_law.txt`).
+- `topology_transport_correlation_results/`: Cross-correlation heatmaps, state-profiling, topological feature importance datasets, and discovered analytical physical laws (`discovered_physical_law.md`).
 - `topoHBNet-run-ml/`: Main topological and machine learning output.
 - `topoHBNet-no_run-ml/`: Main topological output.
