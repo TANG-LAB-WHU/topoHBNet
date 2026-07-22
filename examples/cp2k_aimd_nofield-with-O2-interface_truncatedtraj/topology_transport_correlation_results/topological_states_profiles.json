@@ -1,23 +1,16 @@
 {
     "0": {
-        "LBHB_Fraction": 0.0019791544741673784,
+        "LBHB_Fraction": 0.0020603290455547905,
         "Avg_Wire_Length": 0.0,
-        "Hodge_Gradient_Pct": 99.99999829518318,
+        "Hodge_Gradient_Pct": 99.9999982941709,
         "Hodge_Curl_Pct": 0.0,
-        "n_hbonds": 160.95435602302044
+        "n_hbonds": 160.8696678163006
     },
     "1": {
-        "LBHB_Fraction": 0.002763891650142201,
+        "LBHB_Fraction": 0.0027837354500267406,
         "Avg_Wire_Length": 0.0,
-        "Hodge_Gradient_Pct": 99.99999836655971,
+        "Hodge_Gradient_Pct": 99.99999836902309,
         "Hodge_Curl_Pct": 0.0,
-        "n_hbonds": 160.25249343832022
-    },
-    "2": {
-        "LBHB_Fraction": 0.0028848140629873843,
-        "Avg_Wire_Length": 0.0,
-        "Hodge_Gradient_Pct": 99.99999833535367,
-        "Hodge_Curl_Pct": 0.0,
-        "n_hbonds": 160.07379375591296
+        "n_hbonds": 160.23154093097912
     }
 }
