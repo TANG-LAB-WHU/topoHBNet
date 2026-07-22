@@ -131,10 +131,9 @@ Bridges high-dimensional topological representations from machine learning with 
   From multi-run stability selection on the `LBHB_Fraction` target, PySR discovers the consensus equation:
 
 $$
-\text{LBHB}\textunderscore\text{Fraction} \approx -3.11 \times 10^{-5} \cdot \text{state}\textunderscore\text{1D1A} \cdot \exp(-\text{state}\textunderscore\text{2D0A}) + 0.00111
+LBHB\_Fraction ≈ exp(euler\_characteristic/exp(sin(n\_hbonds\cdot (-0.03735811)) + 0.98132855)) + 0.0021788962
 $$
 
-  where `state_2D0A` (donor defect water, 78.1% stability score) and `state_1D1A` (wire/chain intermediate, 46.1% stability score) are identified as the primary physical drivers of proton transport efficiency.
 - **Usage**:
   - **To generate standard correlation and Random Forest regression:**
     ```bash
