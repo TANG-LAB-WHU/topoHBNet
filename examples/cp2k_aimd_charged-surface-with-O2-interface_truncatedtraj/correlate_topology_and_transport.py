@@ -33,7 +33,7 @@ try:
     from sklearn.cluster import KMeans
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.preprocessing import StandardScaler
-    from sklearn.metrics import silhouette_score
+    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -255,11 +255,13 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features)
     
-    # 2. Automated K-Means Diagnostic Loop (PNAS Standard)
-    print("\n  [Clustering] Running Silhouette and Elbow diagnostics for K in [2, 8]...")
+    # 2. Automated K-Means Diagnostic Loop (PNAS Standard: 4-metric consensus)
+    print("\n  [Clustering] Running 4-metric diagnostics (Elbow/Silhouette/CH/DB) for K in [2, 8]...")
     k_range = range(2, 9)
     inertias = []
     sil_scores = []
+    ch_scores = []
+    db_scores = []
     
     # We sample if the dataset is too large to speed up silhouette score calculation
     sample_size = min(6000, len(features_scaled)) 
@@ -271,40 +273,105 @@ def analyze_topological_states(df: pd.DataFrame, n_clusters: int, output_dir: Pa
         # Silhouette score can be expensive, use sample if needed
         sil = silhouette_score(features_scaled, labels, sample_size=sample_size, random_state=42)
         sil_scores.append(sil)
-        
-    optimal_k_auto = k_range[np.argmax(sil_scores)]
-    print(f"  [Clustering] Max Silhouette Score achieved at K={optimal_k_auto} (Score: {max(sil_scores):.4f})")
+        ch = calinski_harabasz_score(features_scaled, labels)
+        ch_scores.append(ch)
+        db = davies_bouldin_score(features_scaled, labels)
+        db_scores.append(db)
+
+    # Multi-metric consensus for optimal K (4-metric voting)
+    k_list = list(k_range)
+    best_k_sil = k_list[np.argmax(sil_scores)]
+    best_k_ch = k_list[np.argmax(ch_scores)]
+    best_k_db = k_list[np.argmin(db_scores)]  # lower is better
+
+    # Elbow detection via Kneedle algorithm (max distance from baseline)
+    # Line from first point (K=2) to last point (K=8)
+    k_arr = np.array(k_list, dtype=float)
+    inertia_arr = np.array(inertias, dtype=float)
+    p1 = np.array([k_arr[0], inertia_arr[0]])
+    p2 = np.array([k_arr[-1], inertia_arr[-1]])
+    line_vec = p2 - p1
+    line_len = np.linalg.norm(line_vec)
+    line_unit = line_vec / line_len if line_len > 0 else line_vec
+    distances = []
+    for i in range(len(k_list)):
+        pt = np.array([k_arr[i], inertia_arr[i]])
+        proj = np.dot(pt - p1, line_unit)
+        proj_pt = p1 + proj * line_unit
+        distances.append(np.linalg.norm(pt - proj_pt))
+    best_k_elbow = k_list[np.argmax(distances)]
+
+    print(f"  [Clustering] Elbow       -> Best K={best_k_elbow} (max curvature)")
+    print(f"  [Clustering] Silhouette  -> Best K={best_k_sil} (Score: {max(sil_scores):.4f})")
+    print(f"  [Clustering] Calinski-H  -> Best K={best_k_ch} (Score: {max(ch_scores):.1f})")
+    print(f"  [Clustering] Davies-B    -> Best K={best_k_db} (Score: {min(db_scores):.4f})")
+
+    # Consensus: pick the K that appears most often; tie-break by smallest K (Occam's razor)
+    from collections import Counter
+    vote_counts = Counter([best_k_elbow, best_k_sil, best_k_ch, best_k_db])
+    max_votes = max(vote_counts.values())
+    consensus_candidates = sorted([k for k, v in vote_counts.items() if v == max_votes])
+    optimal_k_auto = consensus_candidates[0]
+    print(f"  [Clustering] Consensus Optimal K={optimal_k_auto} (votes: Elbow->K{best_k_elbow}, Sil->K{best_k_sil}, CH->K{best_k_ch}, DB->K{best_k_db})")
     
-    # 3. Plot Diagnostics
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
-    ax1.plot(k_range, inertias, 'o-', color='#3498DB', linewidth=2)
-    ax1.set_xlabel("Number of Clusters (K)", fontsize=11)
-    ax1.set_ylabel("Inertia (WCSS)", fontsize=11)
-    ax1.set_title("Elbow Method Diagnostic", fontsize=12, fontweight='bold')
-    ax1.grid(True, alpha=0.3)
+    # 3. Plot Diagnostics (2x2 grid)
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
     
-    ax2.plot(k_range, sil_scores, 's-', color='#E74C3C', linewidth=2)
-    ax2.axvline(optimal_k_auto, color='gray', linestyle='--', alpha=0.7, label=f'Optimal K={optimal_k_auto}')
-    ax2.set_xlabel("Number of Clusters (K)", fontsize=11)
-    ax2.set_ylabel("Silhouette Score", fontsize=11)
-    ax2.set_title("Silhouette Score Diagnostic", fontsize=12, fontweight='bold')
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
+    # (a) Elbow / Inertia
+    axes[0, 0].plot(k_range, inertias, 'o-', color='#3498DB', linewidth=2, markersize=7)
+    axes[0, 0].set_xlabel("Number of Clusters (K)", fontsize=11)
+    axes[0, 0].set_ylabel("Inertia (WCSS)", fontsize=11)
+    axes[0, 0].set_title("(a) Elbow Method", fontsize=12, fontweight='bold')
+    axes[0, 0].grid(True, alpha=0.3)
     
+    # (b) Silhouette Score
+    axes[0, 1].plot(k_range, sil_scores, 's-', color='#E74C3C', linewidth=2, markersize=7)
+    axes[0, 1].axvline(best_k_sil, color='gray', linestyle='--', alpha=0.7, label=f'Best K={best_k_sil}')
+    axes[0, 1].set_xlabel("Number of Clusters (K)", fontsize=11)
+    axes[0, 1].set_ylabel("Silhouette Score (↑ better)", fontsize=11)
+    axes[0, 1].set_title("(b) Silhouette Score", fontsize=12, fontweight='bold')
+    axes[0, 1].legend(fontsize=9)
+    axes[0, 1].grid(True, alpha=0.3)
+    
+    # (c) Calinski-Harabasz Index
+    axes[1, 0].plot(k_range, ch_scores, 'D-', color='#2ECC71', linewidth=2, markersize=7)
+    axes[1, 0].axvline(best_k_ch, color='gray', linestyle='--', alpha=0.7, label=f'Best K={best_k_ch}')
+    axes[1, 0].set_xlabel("Number of Clusters (K)", fontsize=11)
+    axes[1, 0].set_ylabel("Calinski-Harabasz Index (↑ better)", fontsize=11)
+    axes[1, 0].set_title("(c) Calinski-Harabasz Index", fontsize=12, fontweight='bold')
+    axes[1, 0].legend(fontsize=9)
+    axes[1, 0].grid(True, alpha=0.3)
+    
+    # (d) Davies-Bouldin Index
+    axes[1, 1].plot(k_range, db_scores, '^-', color='#9B59B6', linewidth=2, markersize=7)
+    axes[1, 1].axvline(best_k_db, color='gray', linestyle='--', alpha=0.7, label=f'Best K={best_k_db}')
+    axes[1, 1].set_xlabel("Number of Clusters (K)", fontsize=11)
+    axes[1, 1].set_ylabel("Davies-Bouldin Index (↓ better)", fontsize=11)
+    axes[1, 1].set_title("(d) Davies-Bouldin Index", fontsize=12, fontweight='bold')
+    axes[1, 1].legend(fontsize=9)
+    axes[1, 1].grid(True, alpha=0.3)
+    
+    fig.suptitle(f"Clustering Validation Diagnostics (Consensus K={optimal_k_auto})", fontsize=14, fontweight='bold', y=1.01)
     plt.tight_layout()
     diag_png = output_dir / "topological_clustering_diagnostics.png"
-    plt.savefig(diag_png, dpi=300)
+    plt.savefig(diag_png, dpi=300, bbox_inches='tight')
     plt.close()
     
     # Save raw diagnostic CSV
     csv_dir = output_dir / "raw_data_csv"
     csv_dir.mkdir(parents=True, exist_ok=True)
-    df_diag = pd.DataFrame({"K_clusters": list(k_range), "Inertia_WCSS": inertias, "Silhouette_Score": sil_scores})
+    df_diag = pd.DataFrame({
+        "K_clusters": k_list,
+        "Inertia_WCSS": inertias,
+        "Silhouette_Score": sil_scores,
+        "Calinski_Harabasz": ch_scores,
+        "Davies_Bouldin": db_scores
+    })
     df_diag.to_csv(csv_dir / "topological_clustering_diagnostics.csv", index=False)
 
     # 4. Determine final K to use
     if n_clusters <= 0:
-        print(f"\n  [Physics Warning] Auto-selected K={optimal_k_auto} based on max Silhouette.")
+        print(f"\n  [Clustering] Auto-selected K={optimal_k_auto} via 4-metric consensus voting (Elbow/Sil/CH/DB).")
         print(f"                    Please check {diag_png.name} to ensure it doesn't over-split a single metastable physical basin!")
         final_k = optimal_k_auto
     else:
