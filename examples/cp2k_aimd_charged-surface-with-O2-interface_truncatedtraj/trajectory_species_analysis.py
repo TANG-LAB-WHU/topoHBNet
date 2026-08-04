@@ -55,12 +55,12 @@ SPECIES_RULES = {
     (8, 4): "(H2O)4",   # water tetramer
 }
 
-# Explicit list of tracked species including both OH- anion and *OH radical
+# Explicit list of tracked species including radicals and anions
 TRACKED_SPECIES = [
     "(H2O)2", "(H2O)3", "(H2O)4",
     "*OH", "OH-", "H*", "H2", "H2O", "H2O2",
     "H3O+", "H3O2-", "H5O2+", "H5O3-", "H7O3+", "H7O4-", "H9O4+",
-    "HO2*", "O*", "O2"
+    "HO2*", "HO2-", "O*", "O2", "O2*-", "O2^2-"
 ]
 
 
@@ -126,6 +126,37 @@ def classify_fragment(
                 else:
                     return "OH-"
         return "OH-/*OH"  # Fallback if no spin data available
+
+    # Dynamic decoupling of (0, 2) into O2 (triplet) vs O2*- (superoxide) vs O2^2- (peroxide)
+    if n_H == 0 and n_O == 2:
+        if spin_moments is not None and len(spin_moments) > 0:
+            o_indices = [i for i in frag_indices if elements[i] == "O"]
+            if len(o_indices) == 2:
+                # Triplet O2 (spin=1): sum of abs(spin) ~ 2.0
+                # Superoxide O2*- (spin=1/2): sum of abs(spin) ~ 1.0
+                # Peroxide O2^2- (spin=0): sum of abs(spin) ~ 0.0
+                total_o_spin = abs(spin_moments[o_indices[0]]) + abs(spin_moments[o_indices[1]])
+                if total_o_spin >= 1.5:
+                    return "O2"       # Triplet oxygen
+                elif total_o_spin >= 0.5:
+                    return "O2*-"     # Superoxide radical anion
+                else:
+                    return "O2^2-"    # Peroxide dianion (or singlet O2)
+        return "O2/O2*-" # Fallback if no spin data available
+
+    # Dynamic decoupling of (1, 2) into HO2* (hydroperoxyl radical) vs HO2- (hydroperoxide anion)
+    if n_H == 1 and n_O == 2:
+        if spin_moments is not None and len(spin_moments) > 0:
+            o_indices = [i for i in frag_indices if elements[i] == "O"]
+            if o_indices:
+                total_o_spin = sum(abs(spin_moments[i]) for i in o_indices)
+                if total_o_spin >= 0.35:
+                    return "HO2*"    # Hydroperoxyl radical
+                else:
+                    return "HO2-"    # Hydroperoxide anion
+        return "HO2*"  # Fallback if no spin data available
+
+
 
     species = SPECIES_RULES.get((n_H, n_O))
     if species is not None:
