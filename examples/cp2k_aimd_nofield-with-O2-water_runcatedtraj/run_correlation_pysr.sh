@@ -54,6 +54,7 @@ echo "============================================================"
 python -u correlate_topology_and_transport.py \
     --topo-dir topoHBNet-run-ml \
     --proton-dir proton_transfer_results \
+    --elec-dir interfacial_analysis_results \
     --output-dir topology_transport_correlation_results \
     --equil-start-frame 4000 \
     --n-clusters 0 \

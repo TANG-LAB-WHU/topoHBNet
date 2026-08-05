@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
+
 """
 Correlate H-Bond Topological Neural Network (TNN) Embeddings and Invariants
-with Proton Transfer Dynamics & Hodge Flow Decomposition.
+with Proton Transport, Interfacial Fluctuations & Reactive Species Dynamics.
 
 This script bridges the gap between pure algebraic topology / topological ML
 and physical chemical transport. It reads the outputs from:
-1. topoHBNet_main_analysis.py (Betti numbers, TNN PCA embeddings)
-2. proton_transfer_analysis.py (PMF, Wire lengths, Hodge Flow Gradient/Curl percentages)
+1. topoHBNet_main_analysis.py (Betti numbers, coordination defects, TNN PCA embeddings)
+2. proton_transfer_analysis.py & species analysis (LBHB, Wire lengths, Hodge Flow, *OH Radicals)
+3. interfacial_water_analysis.py (Dynamic surface fluctuations like Z_GDS_A, interfacial H-bonds)
 
 And performs:
-- Alignment of time-series data
-- Pearson/Spearman Correlation Heatmaps
+- Precise time-series alignment across different diagnostic modules
+- Pearson Cross-Correlation Heatmaps
 - Topological State Clustering (K-Means on TNN PC space) & Transport Profiling
-- Regression Modeling & Feature Importance (Predicting transport from topology)
-- Publication-quality visualizations
+- Random Forest Regression & Feature Importance (Filtering out non-physical noise)
+- Symbolic Regression (PySR) to discover explicit, analytical physical laws
+- Publication-quality visualizations and Markdown reports
 """
 
 import os
@@ -57,6 +60,8 @@ def parse_args():
                         help='Directory containing proton transfer and dynamics results')
     parser.add_argument('--species-dir', type=str, default='trajectory_species_results_mulliken',
                         help='Directory containing reactive species analysis results (default: trajectory_species_results_mulliken).')
+    parser.add_argument('--elec-dir', type=str, default='interfacial_analysis_results',
+                        help='Directory containing interfacial electric field analysis results (electric_field_results.json).')
     parser.add_argument('--target-species', nargs='+', type=str, default=None,
                         help='Explicitly specify one or multiple target reactive species (e.g., "*OH" "H3O+" or "*OH,H3O+"). If not set, will auto-select 1 species according to priority rules.')
     parser.add_argument('--target-var', nargs='+', type=str, default=None,
@@ -101,8 +106,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_datasets(topo_dir: Path, proton_dir: Path, species_dir: Optional[Path] = None):
-    """Load and merge topological, transport, and reactive species datasets."""
+def load_datasets(topo_dir: Path, proton_dir: Path, species_dir: Optional[Path] = None, elec_dir: Optional[Path] = None) -> Tuple[pd.DataFrame, list, list, list]:
+    """Load and merge topological, transport, reactive species, and electric field datasets."""
     # Paths to files
     topo_csv = topo_dir / "raw_data_csv" / "dynamics_topology.csv"
     pca_csv = topo_dir / "raw_data_csv" / "ml_pca_components.csv"
@@ -144,7 +149,7 @@ def load_datasets(topo_dir: Path, proton_dir: Path, species_dir: Optional[Path] 
     state_cols = []
     states_raw_csv = topo_dir / "raw_data_csv" / "water_states_raw.csv"
     if states_raw_csv.exists():
-        print(f"Loading dynamic water states from: {states_raw_csv}")
+        print(f"Loading raw water coordination states from: {states_raw_csv}")
         df_states = pd.read_csv(states_raw_csv)
         total_atoms = df_states.groupby('frame_idx')['atom_idx'].count()
         states_counts = df_states.groupby(['frame_idx', 'state']).size().unstack(fill_value=0)
@@ -195,12 +200,53 @@ def load_datasets(topo_dir: Path, proton_dir: Path, species_dir: Optional[Path] 
         df_merged = pd.merge_asof(df_merged, df_species, on="Time_fs", direction="nearest")
         print(f"  Loaded reactive species columns: {species_cols}")
 
+    # Optionally load interfacial electric field analysis results if available
+    elec_cols = []
+    if elec_dir is None:
+        base_dir = topo_dir.parent
+        cand_path = base_dir / "interfacial_analysis_results"
+        if (cand_path / "electric_field_results.json").exists() or (cand_path / "surface_fluctuation.csv").exists():
+            elec_dir = cand_path
+
+    elec_cols = []
+
+    # Load dynamic per-frame interfacial time series if available
+    if elec_dir is not None:
+        surf_csv = elec_dir / "surface_fluctuation.csv"
+        if surf_csv.exists():
+            try:
+                df_surf = pd.read_csv(surf_csv)
+                if "Time_ps" in df_surf.columns:
+                    df_surf["Time_fs"] = df_surf["Time_ps"] * 1000.0
+                    df_surf = df_surf.drop(columns=["Time_ps"]).sort_values("Time_fs")
+                    df_merged = pd.merge_asof(df_merged, df_surf, on="Time_fs", direction="nearest")
+                    if "Z_GDS_A" in df_surf.columns and "Z_GDS_A" not in elec_cols:
+                        elec_cols.append("Z_GDS_A")
+                    print(f"  Loaded dynamic per-frame surface fluctuation: Z_GDS_A")
+            except Exception as e:
+                print(f"  [Warning] Failed to load surface_fluctuation.csv: {e}")
+
+        hbond_evo_csv = elec_dir / "hbond_evolution.csv"
+        if hbond_evo_csv.exists():
+            try:
+                df_hbond_evo = pd.read_csv(hbond_evo_csv)
+                if "Time_ps" in df_hbond_evo.columns:
+                    df_hbond_evo["Time_fs"] = df_hbond_evo["Time_ps"] * 1000.0
+                    df_hbond_evo = df_hbond_evo.drop(columns=["Time_ps"]).sort_values("Time_fs")
+                    df_merged = pd.merge_asof(df_merged, df_hbond_evo, on="Time_fs", direction="nearest")
+                    for col in ["HBonds_per_Interfacial_Water", "N_Interfacial_Water"]:
+                        if col in df_hbond_evo.columns and col not in elec_cols:
+                            elec_cols.append(col)
+                    print(f"  Loaded dynamic per-frame interfacial H-bond features: HBonds_per_Interfacial_Water, N_Interfacial_Water")
+            except Exception as e:
+                print(f"  [Warning] Failed to load hbond_evolution.csv: {e}")
+
     # Drop potential duplicates and clean
     if "Frame" in df_merged.columns:
         df_merged = df_merged.drop(columns=["Frame"])
 
     print(f"Successfully aligned and merged dataset: {df_merged.shape[0]} frames.")
-    return df_merged, state_cols, species_cols
+    return df_merged, state_cols, species_cols, elec_cols
 
 
 def plot_correlation_heatmap(df: pd.DataFrame, topo_cols: list, transport_cols: list, output_path: Path):
@@ -840,7 +886,8 @@ def main():
     # 1. Load and merge datasets
     try:
         species_dir_path = Path(args.species_dir) if args.species_dir else None
-        df, state_cols, species_cols = load_datasets(topo_dir, proton_dir, species_dir_path)
+        elec_dir_path = Path(args.elec_dir) if args.elec_dir else None
+        df, state_cols, species_cols, elec_cols = load_datasets(topo_dir, proton_dir, species_dir_path, elec_dir_path)
     except Exception as e:
         print(f"Error loading datasets: {e}")
         print("Please check that both --topo-dir and --proton-dir have completed run-ml/timeseries files.")
@@ -878,6 +925,10 @@ def main():
     topo_cols = ["n_hbonds", "betti_0", "betti_1", "betti_2", "euler_characteristic", "PC1", "PC2"]
     if state_cols:
         topo_cols.extend(state_cols)
+    if elec_cols:
+        for c in elec_cols:
+            if c in df.columns and c not in topo_cols and df[c].std() > 1e-6:
+                topo_cols.append(c)
     transport_cols = ["LBHB_Fraction", "Avg_Wire_Length", "Hodge_Gradient_Pct", "Hodge_Curl_Pct", "Hodge_Harmonic_Pct"]
     if species_cols:
         transport_cols.extend([c for c in species_cols if c not in transport_cols])
@@ -1017,6 +1068,10 @@ def main():
     # 5. Symbolic Regression (Optional physical law discovery)
     if args.run_pysr:
         interpretable_topo_cols = [c for c in topo_cols if c not in ["PC1", "PC2"]]
+        if elec_cols:
+            for c in elec_cols:
+                if c in df.columns and c not in interpretable_topo_cols and df[c].std() > 1e-6:
+                    interpretable_topo_cols.append(c)
         print(f"\n[Physics Guidance] Restricting symbolic regression features to physically interpretable invariants: {interpretable_topo_cols}")
         
         pysr_ga_args = {
