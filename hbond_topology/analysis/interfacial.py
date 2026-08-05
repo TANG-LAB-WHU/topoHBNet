@@ -37,11 +37,11 @@ class InterfacialAnalysisResult:
     z_bins : np.ndarray
         Bin centres for the relative-Z density profile (Å).
     density_O : np.ndarray
-        Water oxygen number-density profile (atoms/ų).
+        Water oxygen number-density profile (atoms/Å$^3$).
     density_H : np.ndarray
-        Water hydrogen number-density profile (atoms/ų).
+        Water hydrogen number-density profile (atoms/Å$^3$).
     density_substrate : np.ndarray
-        Substrate (non-water) atom number-density profile (atoms/ų).
+        Substrate (non-water) atom number-density profile (atoms/Å$^3$).
     interface_cutoff : float
         Final cutoff δ used to define the interfacial layer (Å).
     z_surf_timeseries : np.ndarray
@@ -855,7 +855,7 @@ class InterfacialVisualizer:
         ax.axvline(0, color="k", ls="--", lw=0.8, label="GDS")
 
         ax.set_xlabel("ΔZ relative to surface (Å)", fontsize=12)
-        ax.set_ylabel("Number density (atoms/ų)", fontsize=12)
+        ax.set_ylabel(r"Number density (atoms/Å$^3$)", fontsize=12)
         ax.set_title("Interfacial Density Profile", fontsize=13)
         ax.legend(fontsize=9)
         ax.set_xlim(-5, 15)
